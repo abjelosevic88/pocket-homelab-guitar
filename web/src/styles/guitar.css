@@ -161,7 +161,6 @@ span.block { display: block; }
 .fav.on .icon { fill: currentColor; }
 .chip-n { margin-left: 2px; font-size: 11px; color: var(--muted); }
 .chip.active .chip-n { color: inherit; opacity: .75; }
-.block { display: block; }
 .center { text-align: center; justify-content: center; }
 .end { justify-content: flex-end; }
 .gap { gap: 8px; }
