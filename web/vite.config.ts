@@ -11,15 +11,37 @@ import { fileURLToPath } from 'node:url'
 // on build, so the Go binary embeds them like any other asset.
 const AT = fileURLToPath(new URL('./node_modules/@coderline/alphatab/dist/', import.meta.url))
 const ALPHATAB_FILES: Record<string, string> = {
-  'alphaTab.mjs': 'alphaTab.min.mjs',
-  'alphaTab.core.mjs': 'alphaTab.core.min.mjs',
-  'alphaTab.worker.mjs': 'alphaTab.worker.min.mjs',
-  'alphaTab.worklet.mjs': 'alphaTab.worklet.min.mjs',
+  // the readable builds (not .min): the core gets two small layout patches below; served gzipped anyway
+  'alphaTab.mjs': 'alphaTab.mjs',
+  'alphaTab.core.mjs': 'alphaTab.core.mjs',
+  'alphaTab.worker.mjs': 'alphaTab.worker.mjs',
+  'alphaTab.worklet.mjs': 'alphaTab.worklet.mjs',
   'font/Bravura.woff2': 'font/Bravura.woff2',
   'font/Bravura.woff': 'font/Bravura.woff',
   'font/Bravura.otf': 'font/Bravura.otf',
   'soundfont/sonivox.sf2': 'soundfont/sonivox.sf2',
 }
+// Layout fixes for tab files from the wild (alphaTab 1.8.4). Each pattern must match exactly once:
+// an alphaTab upgrade that changes this code fails the build instead of silently losing the fix.
+//  1. Section names ("Main Riff") may share a line with P.M./let ring marks that start a beat later,
+//     but their text is wider than the beat and runs into them: give sections a line of their own.
+//  2. Text above the staff is sized by its letters only, so descenders touch the mark below
+//     ("alternate picking" on top of "P.M."): add a little room under every text line.
+const PATCHES: [RegExp, string][] = [
+  [/(class MarkerEffectInfo extends EffectInfo \{[\s\S]*?get canShareBand\(\) \{\s*return )true;/, '$1false;'],
+  [/(class TextGlyph extends EffectGlyph \{[\s\S]*?const h = )size\.height;/, '$1size.height + 4;'],
+]
+function patchCore(src: string): string {
+  for (const [re, to] of PATCHES) {
+    if ((src.match(new RegExp(re.source, 'g')) || []).length !== 1) throw new Error(`alphaTab patch no longer applies: ${re.source.slice(0, 60)}…`)
+    src = src.replace(re, to)
+  }
+  return src
+}
+function readAlphaTab(src: string): Buffer | string {
+  return src === 'alphaTab.core.mjs' ? patchCore(readFileSync(AT + src, 'utf8')) : readFileSync(AT + src)
+}
+
 const MIME: Record<string, string> = { mjs: 'text/javascript', woff2: 'font/woff2', woff: 'font/woff', otf: 'font/otf', sf2: 'application/octet-stream' }
 
 function alphaTabAssets(): Plugin {
@@ -32,12 +54,12 @@ function alphaTabAssets(): Plugin {
         const src = ALPHATAB_FILES[path.slice('/alphatab/'.length)]
         if (!src) { res.statusCode = 404; res.end(); return }
         res.setHeader('Content-Type', MIME[src.split('.').pop() || ''] || 'application/octet-stream')
-        res.end(readFileSync(AT + src))
+        res.end(readAlphaTab(src))
       })
     },
     generateBundle() {
       for (const [name, src] of Object.entries(ALPHATAB_FILES)) {
-        this.emitFile({ type: 'asset', fileName: 'alphatab/' + name, source: readFileSync(AT + src) })
+        this.emitFile({ type: 'asset', fileName: 'alphatab/' + name, source: readAlphaTab(src) })
       }
     },
   }
