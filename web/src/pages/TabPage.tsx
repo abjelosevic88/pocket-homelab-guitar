@@ -340,7 +340,7 @@ function Player({ tabId }: { tabId: number }) {
     panel === 'sections' ? <SectionsPanel tab={tab} sections={sections} setSections={setSections} st={st} activeId={activeId} onActivate={activate}
       onSelectBars={(a, b) => { engine.selectBars(a, b); engine.setLooping(true) }} onClear={() => engine.clearSelection()}
       trainer={trainer} setTrainer={setTrainer} passes={passes} aiPlan={aiPlan} aiReady={aiReady} />
-      : panel === 'song' ? <SongPanel tab={tab} patch={patch} onPrint={() => engine.print()} todayS={timer.todayS} sessionS={timer.sessionS} />
+      : panel === 'song' ? <SongPanel tab={tab} patch={patch} onPrint={() => engine.print()} todayS={timer.todayS} sessionS={timer.sessionS} fileNotes={st.fileNotes} />
         : <RecordingPanel tab={tab} setRecording={setRecording} mode={sound} setMode={setSound} />
   )
   const panelTitle = panel === 'sections' ? 'Sections and loops' : panel === 'song' ? 'The song' : 'Original recording'

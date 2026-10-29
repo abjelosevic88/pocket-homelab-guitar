@@ -4,6 +4,7 @@
 // readouts that show them.
 import { useSyncExternalStore } from 'react'
 import { loadAlphaTab, type AlphaTab, type AT } from './alphatab'
+import { tidyScore, type FileNote } from './tidy'
 import type { Notation, ScoreLayout } from '../lib/types'
 
 export interface ViewOptions {
@@ -21,6 +22,7 @@ export interface EngineState {
   phase: 'idle' | 'loading' | 'rendering' | 'ready' | 'error'
   error: string
   score: AT.model.Score | null
+  fileNotes: FileNote[]      // long text notes taken out of the tab (see tidy.ts)
   playerReady: boolean
   soundLoad: number          // 0..1 while the soundfont downloads
   playing: boolean
@@ -61,7 +63,7 @@ export interface EngineEvents {
 }
 
 const initial: EngineState = {
-  phase: 'idle', error: '', score: null, playerReady: false, soundLoad: 0, playing: false, looping: false, range: null,
+  phase: 'idle', error: '', score: null, fileNotes: [], playerReady: false, soundLoad: 0, playing: false, looping: false, range: null,
   speed: 1, metronome: false, countIn: false, volume: 1, muted: [], solo: [], trackVolume: {}, renderedTracks: [],
 }
 
@@ -148,7 +150,9 @@ export class TabEngine {
     on<AT.synth.ActiveBeatsChangedEventArgs>(api.activeBeatsChanged, e => { if (e.activeBeats.length) this.beats.set(e.activeBeats, true) })
     on<AT.model.Beat>(api.beatMouseDown, b => { this.beats.set([b], true); this.emit('beatClicked', b) })
     try {
-      api.load(new Uint8Array(data), view.tracks.length ? view.tracks : [0])
+      const score = at.importer.ScoreLoader.loadScoreFromBytes(new Uint8Array(data), settings)
+      this.state.set({ fileNotes: tidyScore(score) })
+      api.renderScore(score, view.tracks.length ? view.tracks : [0])
     } catch (e) {
       this.state.set({ phase: 'error', error: friendlyError(e as Error) })
     }

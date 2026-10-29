@@ -1,5 +1,6 @@
 // About the song: where you are with it, notes, goal speed, the tracks in
 // the file and where the file came from.
+import type { FileNote } from './tidy'
 import { useEffect, useRef, useState } from 'react'
 import type { Tab, TabStatus } from '../lib/types'
 import { Field, Segmented, download } from '../components/ui'
@@ -14,7 +15,7 @@ export const STATUS: { value: TabStatus; label: string; short: string }[] = [
   { value: 'mastered', label: 'Can play it', short: 'Can play' },
 ]
 
-export function SongPanel({ tab, patch, onPrint, todayS, sessionS }: { tab: Tab; patch: (p: Partial<Tab>) => void; onPrint: () => void; todayS: number; sessionS: number }) {
+export function SongPanel({ tab, patch, onPrint, todayS, sessionS, fileNotes = [] }: { tab: Tab; patch: (p: Partial<Tab>) => void; onPrint: () => void; todayS: number; sessionS: number; fileNotes?: FileNote[] }) {
   const [notes, setNotes] = useState(tab.notes)
   const [tags, setTags] = useState(tab.tags)
   const notesRef = useRef(tab.notes)
@@ -38,6 +39,15 @@ export function SongPanel({ tab, patch, onPrint, todayS, sessionS }: { tab: Tab;
           <span><b className="tnum">{tab.best_speed || 0}%</b><span className="muted"> best speed</span></span>
         </div>
       </div>
+      {fileNotes.length > 0 && (
+        <div className="pp-block">
+          <h3>Notes in this file</h3>
+          <p className="muted small">Written into the tab by whoever made it. In the tab they show as the marks below, so they don’t print over each other.</p>
+          <ul className="pp-filenotes">
+            {fileNotes.map(n => <li key={n.mark}><b>{n.mark}</b><span>{n.text}<span className="muted small"> · bar {n.bar}{n.tracks.length === 1 ? ` · ${n.tracks[0]}` : ''}</span></span></li>)}
+          </ul>
+        </div>
+      )}
 
       <div className="pp-block">
         <div className="pp-grid">
