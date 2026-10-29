@@ -29,12 +29,26 @@ const ALPHATAB_FILES: Record<string, string> = {
 //     ("alternate picking" on top of "P.M."): add a little room under every text line.
 //  3. A bar with more voices than the next one crashed loading ("reading 'beats'"): skip the link
 //     to a voice that is not there (files from other converters, e.g. older Songsterr downloads).
+//  5. The rhythm under the tab (stems, beams, tuplets) is drawn in the colour of the bar lines,
+//     a softer shade than the fret numbers, so the numbers stay what you read first.
 //  4. Standard notation with several voices crashed when the lowest note head of a chord was a
 //     displaced one ("reading 'length'"): treat a missing note head as one that cannot be shared.
 const PATCHES: [RegExp, string][] = [
   [/(class MarkerEffectInfo extends EffectInfo \{[\s\S]*?get canShareBand\(\) \{\s*return )true;/, '$1false;'],
   [/(class TextGlyph extends EffectGlyph \{[\s\S]*?const h = )size\.height;/, '$1size.height + 4;'],
   [/(const nextVoice = this\.bar\.nextBar\.voices\[this\.index\];\s*if \()(nextVoice\.beats\.length > 0\) \{\s*beat\.nextBeat = nextVoice\.beats\[0\];\s*beat\.nextBeat\.previousBeat = beat;\s*\}) else beat\.nextBeat\.previousBeat = beat;/, '$1nextVoice && $2'],
+  [/paintBeams\(cx, cy, canvas, flagsElement, beamsElement\) \{\s*if \(this\.rhythmMode !== TabRhythmMode\.Hidden\) super\.paintBeams\(cx, cy, canvas, flagsElement, beamsElement\);\s*\}\s*paintTuplets\(cx, cy, canvas, beatElement, bracketsAsArcs = false\) \{\s*if \(this\.rhythmMode !== TabRhythmMode\.Hidden\) super\.paintTuplets\(cx, cy, canvas, beatElement, bracketsAsArcs\);\s*\}/,
+    `paintBeams(cx, cy, canvas, flagsElement, beamsElement) {
+		if (this.rhythmMode !== TabRhythmMode.Hidden) this._pgtRhythmColor(() => super.paintBeams(cx, cy, canvas, flagsElement, beamsElement));
+	}
+	paintTuplets(cx, cy, canvas, beatElement, bracketsAsArcs = false) {
+		if (this.rhythmMode !== TabRhythmMode.Hidden) this._pgtRhythmColor(() => super.paintTuplets(cx, cy, canvas, beatElement, bracketsAsArcs));
+	}
+	_pgtRhythmColor(paint) {
+		const r = this.resources, main = r.mainGlyphColor, second = r.secondaryGlyphColor;
+		r.mainGlyphColor = r.barSeparatorColor; r.secondaryGlyphColor = r.barSeparatorColor;
+		try { paint(); } finally { r.mainGlyphColor = main; r.secondaryGlyphColor = second; }
+	}`],
   [/(const mainGroupBottomNoteHead = mainGroup\.correctNotes\.notes\.get\(mainGroupBottom\);\s*if \()(mainGroupBottomNoteHead\.length > 1\) return false;\s*const thisGroupBottomNoteHead = thisGroup\.correctNotes\.notes\.get\(thisGroupBottom\);\s*if \()(thisGroupBottomNoteHead\.length > 1\) return false;)/, '$1!mainGroupBottomNoteHead || $2!thisGroupBottomNoteHead || $3'],
 ]
 function patchCore(src: string): string {
