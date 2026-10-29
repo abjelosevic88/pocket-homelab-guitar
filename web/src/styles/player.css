@@ -37,7 +37,7 @@
 
 /* alphaTab's own elements: cursor, highlight, selection */
 .score .at-cursor-bar { background: color-mix(in srgb, var(--accent) 9%, transparent); }
-.score .at-cursor-beat { background: var(--accent); }
+.score .at-cursor-beat { background: var(--accent); opacity: .45; }
 /* alphaTab sizes and centres the beat line itself (inline transform). The cursor layer blends with the
    score under it, so the fret number under the line stays readable: multiply keeps dark digits dark on
    light paper, screen keeps light digits light on dark. */
