@@ -60,10 +60,6 @@ type Config struct {
 	OpenAIModel   string
 	OpenAIBaseURL string
 
-	// The Songsterr → Guitar Pro converter (songsterr-downloader); empty =
-	// adding tabs from Songsterr is off.
-	TabConverterURL string
-
 	// Outbound lookups identify as this.
 	UserAgent string
 
@@ -163,8 +159,6 @@ func Load() (*Config, error) {
 		OpenAIKey:     env("OPENAI_API_KEY", ""),
 		OpenAIModel:   env("OPENAI_MODEL", ""),
 		OpenAIBaseURL: strings.TrimRight(env("OPENAI_BASE_URL", ""), "/"),
-
-		TabConverterURL: strings.TrimRight(env("TAB_CONVERTER_URL", ""), "/"),
 
 		UserAgent: env("USER_AGENT", "PocketGuitar/1.0 (+https://github.com/abjelosevic88/pocket-homelab-guitar)"),
 

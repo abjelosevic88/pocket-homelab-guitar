@@ -309,3 +309,4 @@ span.block { display: block; }
 .ss-row + .ss-row { border-top: 1px solid var(--border); }
 .ss-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .ss-row .btn { flex: none; }
+.ss-step { display: inline-block; min-width: 9.5em; text-align: left; }

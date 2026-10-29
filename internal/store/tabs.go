@@ -10,7 +10,7 @@ import (
 
 // The columns of a tab plus what its practice adds up to.
 const tabCols = `t.id, t.user_id, t.title, t.artist, t.album, t.tabber, t.names_from, t.format, t.file_name, t.size, t.sha256,
-	t.source, t.source_ref, t.folder_id, t.source_stamp, t.source_missing, t.tempo, t.bars, t.duration_s, t.tracks, t.tuning, t.analyzed,
+	t.source, t.source_ref, t.origin_url, t.folder_id, t.source_stamp, t.source_missing, t.tempo, t.bars, t.duration_s, t.tracks, t.tuning, t.analyzed,
 	t.status, t.mastered_at, t.difficulty, t.favorite, t.tags, t.notes, t.capo, t.goal_speed, t.best_speed, t.player, t.recording,
 	t.created_at, t.updated_at,
 	COALESCE(p.last, ''), COALESCE(p.n, 0), COALESCE(p.secs, 0),
@@ -39,7 +39,7 @@ func scanTab(row interface{ Scan(...any) error }) (*Tab, error) {
 	var missing, analyzed, fav int
 	var tracks, player, rec, spaceName, folderPath string
 	if err := row.Scan(&t.ID, &t.UserID, &t.Title, &t.Artist, &t.Album, &t.Tabber, &t.NamesFrom, &t.Format, &t.FileName, &t.Size, &t.SHA256,
-		&t.Source, &t.SourceRef, &folder, &t.SourceStamp, &missing, &t.Tempo, &t.Bars, &t.DurationS, &tracks, &t.Tuning, &analyzed,
+		&t.Source, &t.SourceRef, &t.OriginURL, &folder, &t.SourceStamp, &missing, &t.Tempo, &t.Bars, &t.DurationS, &tracks, &t.Tuning, &analyzed,
 		&t.Status, &t.MasteredAt, &t.Difficulty, &fav, &t.Tags, &t.Notes, &t.Capo, &t.GoalSpeed, &t.BestSpeed, &player, &rec,
 		&t.CreatedAt, &t.UpdatedAt, &t.LastPlayedAt, &t.PlayCount, &t.PracticeS, &spaceName, &folderPath); err != nil {
 		return nil, notFound(err)
@@ -214,11 +214,11 @@ func (s *Store) CreateTab(ctx context.Context, uid int64, t *Tab) error {
 	if created == "" {
 		created = now
 	}
-	res, err := s.DB.ExecContext(ctx, `INSERT INTO tabs (user_id, title, artist, album, tabber, names_from, format, file_name, size, sha256, source, source_ref,
+	res, err := s.DB.ExecContext(ctx, `INSERT INTO tabs (user_id, title, artist, album, tabber, names_from, format, file_name, size, sha256, source, source_ref, origin_url,
 		folder_id, source_stamp, tempo, bars, duration_s, tracks, tuning, analyzed, status, mastered_at, difficulty, favorite, tags, notes, capo,
 		goal_speed, best_speed, player, recording, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		uid, t.Title, t.Artist, t.Album, t.Tabber, t.NamesFrom, t.Format, t.FileName, t.Size, t.SHA256, t.Source, t.SourceRef,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		uid, t.Title, t.Artist, t.Album, t.Tabber, t.NamesFrom, t.Format, t.FileName, t.Size, t.SHA256, t.Source, t.SourceRef, t.OriginURL,
 		nullI(t.FolderID), t.SourceStamp, t.Tempo, t.Bars, t.DurationS, string(tracks), t.Tuning, boolInt(t.Analyzed), t.Status, t.MasteredAt,
 		t.Difficulty, boolInt(t.Favorite), JoinTags(t.Tags), t.Notes, t.Capo, t.GoalSpeed, t.BestSpeed, player, recordingJSON(t.Recording), created, now)
 	if err != nil {

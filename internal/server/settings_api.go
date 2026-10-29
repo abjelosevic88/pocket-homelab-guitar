@@ -57,7 +57,7 @@ func (s *Server) publicSettings(ctx context.Context, u *store.User, st store.Set
 		"music_url": st.MusicURL, "music_user": st.MusicUser, "music_password": mask(st.MusicPassword),
 		"music_mode":  s.connMode(st.MusicMode, st.MusicPassword),
 		"ai_provider": st.AIProvider, "ai_pocket_model": st.AIPocketModel, "openai_api_key": mask(st.OpenAIKey), "openai_model": st.OpenAIModel, "openai_base_url": st.OpenAIBaseURL,
-		"setup_complete": st.SetupComplete, "base_url": s.cfg.BaseURL, "songsterr_available": s.songsterrAvailable(),
+		"setup_complete": st.SetupComplete, "base_url": s.cfg.BaseURL, "songsterr_available": true,
 	}
 	for _, a := range pocketApps {
 		mode, via, detail := s.connStatus(ctx, u, st, a)
@@ -515,7 +515,7 @@ func (s *Server) handleImportJSON(w http.ResponseWriter, r *http.Request) {
 	tabIDs := map[int64]int64{}
 	secIDs := map[int64]int64{}
 	for _, et := range doc.Tabs {
-		t, existing, err := s.addTab(ctx, uid, newTab{name: firstNonEmpty(et.FileName, "tab.gp"), data: et.File, source: "import", status: et.Status, tags: et.Tags,
+		t, existing, err := s.addTab(ctx, uid, newTab{name: firstNonEmpty(et.FileName, "tab.gp"), data: et.File, source: "import", origin: et.OriginURL, status: et.Status, tags: et.Tags,
 			title: et.Title, artist: et.Artist, album: et.Album})
 		if err != nil {
 			counts["skipped"]++

@@ -18,7 +18,6 @@ Environment variables; every one has a default. Personal settings (goals, player
 | `NOTIFY_URL`, `NOTIFY_FORMAT` | – | Apprise (`…/notify/key`), ntfy topic URL or JSON webhook; format `apprise`/`ntfy`/`json` |
 | `HABITS_URL`, `HABITS_TOKEN` | – | Pocket Habits, direct connection (or use Pocket Core) |
 | `FILES_URL`, `FILES_TOKEN` | – | Pocket Files, direct connection: folders of tabs that appear in the library (or use Pocket Core) |
-| `TAB_CONVERTER_URL` | – | A [songsterr-downloader](https://github.com/Metaphysics0/songsterr-downloader) converter; turns on "From Songsterr" |
 | `NAVIDROME_URL`, `NAVIDROME_USER`, `NAVIDROME_PASSWORD` | – | The original recordings to play along with, from Navidrome (or your Navidrome login in Pocket Core) |
 | `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL` | – | The reflection and questions without Pocket AI |
 | `CORE_URL`, `CORE_REGISTRATION_KEY`, `CORE_APP_URL` | – | Pocket Core |

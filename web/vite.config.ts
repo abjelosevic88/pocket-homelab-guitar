@@ -27,9 +27,15 @@ const ALPHATAB_FILES: Record<string, string> = {
 //     but their text is wider than the beat and runs into them: give sections a line of their own.
 //  2. Text above the staff is sized by its letters only, so descenders touch the mark below
 //     ("alternate picking" on top of "P.M."): add a little room under every text line.
+//  3. A bar with more voices than the next one crashed loading ("reading 'beats'"): skip the link
+//     to a voice that is not there (files from other converters, e.g. older Songsterr downloads).
+//  4. Standard notation with several voices crashed when the lowest note head of a chord was a
+//     displaced one ("reading 'length'"): treat a missing note head as one that cannot be shared.
 const PATCHES: [RegExp, string][] = [
   [/(class MarkerEffectInfo extends EffectInfo \{[\s\S]*?get canShareBand\(\) \{\s*return )true;/, '$1false;'],
   [/(class TextGlyph extends EffectGlyph \{[\s\S]*?const h = )size\.height;/, '$1size.height + 4;'],
+  [/(const nextVoice = this\.bar\.nextBar\.voices\[this\.index\];\s*if \()(nextVoice\.beats\.length > 0\) \{\s*beat\.nextBeat = nextVoice\.beats\[0\];\s*beat\.nextBeat\.previousBeat = beat;\s*\}) else beat\.nextBeat\.previousBeat = beat;/, '$1nextVoice && $2'],
+  [/(const mainGroupBottomNoteHead = mainGroup\.correctNotes\.notes\.get\(mainGroupBottom\);\s*if \()(mainGroupBottomNoteHead\.length > 1\) return false;\s*const thisGroupBottomNoteHead = thisGroup\.correctNotes\.notes\.get\(thisGroupBottom\);\s*if \()(thisGroupBottomNoteHead\.length > 1\) return false;)/, '$1!mainGroupBottomNoteHead || $2!thisGroupBottomNoteHead || $3'],
 ]
 function patchCore(src: string): string {
   for (const [re, to] of PATCHES) {

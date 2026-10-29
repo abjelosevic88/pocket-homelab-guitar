@@ -10,9 +10,9 @@ Everything is per person: another person's ids answer 404.
 | :--- | :--- |
 | `GET /tabs?q=&status=&favorite=1&tag=&tuning=&artist=&source=&sort=recent\|added\|title\|artist\|practice&limit=&offset=` | `{tabs, total}` |
 | `GET /tabs/facets` | Tags, tunings, artists with counts, per-status counts |
-| `POST /tabs` (multipart, one or more `file` fields; optional `status`, `tags`) | `{added[], existing[], errors[]}`; a file you already have (same bytes) is returned under `existing` |
+| `POST /tabs` (multipart, one or more `file` fields; optional `status`, `tags`; `songsterr_url`, `title`, `artist` for a file built from Songsterr) | `{added[], existing[], errors[]}`; a file you already have (same bytes) is returned under `existing` |
 | `GET /songsterr/search?q=` | Search Songsterr: `{ok, results:[{id, title, artist, url, guitars, bass, drums, tuning, difficulty, tab_id}]}`; `tab_id` = the song in your library already |
-| `POST /tabs/songsterr` `{url}` | Fetch a Songsterr tab through the converter (`TAB_CONVERTER_URL`) → `{tab, existing}` |
+| `GET /songsterr/song?url=` · `GET /songsterr/part?song=&revision=&image=&part=` | A Songsterr song's data and one track's data, fetched by the server; the browser builds the Guitar Pro file from them (`web/src/songsterr`) and uploads it |
 | `GET /tabs/{id}` | The tab with its `sections` |
 | `GET /tabs/{id}/file` | The original file |
 | `PUT /tabs/{id}` | Any of `title artist album tabber status difficulty favorite tags notes capo goal_speed best_speed player recording` |

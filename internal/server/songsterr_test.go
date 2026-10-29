@@ -1,6 +1,12 @@
 package server
 
-import "testing"
+import (
+	"bytes"
+	"encoding/json"
+	"mime/multipart"
+	"net/http"
+	"testing"
+)
 
 func TestSongsterrSummary(t *testing.T) {
 	r := summarize(songsterrSong{SongID: 455118, Artist: "Metallica", Title: "Master of Puppets", Tracks: []songsterrTrack{
@@ -19,4 +25,39 @@ func TestSongsterrSummary(t *testing.T) {
 	if u := songsterrTabURL(7, "Björk", "Jóga!"); songsterrURL.FindStringSubmatch(u) == nil {
 		t.Fatalf("odd names must still give an address the importer takes: %s", u)
 	}
+}
+
+func TestSongsterrUploadKeepsOrigin(t *testing.T) {
+	a := newApp(t, nil)
+	var b bytes.Buffer
+	mw := multipart.NewWriter(&b)
+	fw, _ := mw.CreateFormFile("file", "Metallica - One.gp")
+	_, _ = fw.Write([]byte(tex("", "")))
+	_ = mw.WriteField("songsterr_url", "https://www.songsterr.com/a/wsa/metallica-one-tab-s23")
+	_ = mw.WriteField("title", "One")
+	_ = mw.WriteField("artist", "Metallica")
+	_ = mw.Close()
+	req, _ := http.NewRequest("POST", a.url+"/api/v1/tabs", &b)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	code, raw := a.do(req, a.alice)
+	var res map[string]any
+	_ = json.Unmarshal(raw, &res)
+	tab := firstAdded(t, res)
+	if code != 201 || tab["source"] != "songsterr" || tab["origin_url"] != "https://www.songsterr.com/a/wsa/metallica-one-tab-s23" || tab["title"] != "One" || tab["artist"] != "Metallica" {
+		t.Fatalf("songsterr upload = %d %v", code, tab)
+	}
+	// a made-up address is refused
+	b.Reset()
+	mw = multipart.NewWriter(&b)
+	fw, _ = mw.CreateFormFile("file", "x.gp")
+	_, _ = fw.Write([]byte(tex("X", "Y")))
+	_ = mw.WriteField("songsterr_url", "https://evil.example/a/wsa/x-tab-s1")
+	_ = mw.Close()
+	req, _ = http.NewRequest("POST", a.url+"/api/v1/tabs", &b)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	if code, _ := a.do(req, a.alice); code != 400 {
+		t.Fatalf("foreign address accepted: %d", code)
+	}
+	a.expect(400, a.alice, "GET", "/api/v1/songsterr/part?song=1&revision=2&image=../../etc&part=0", nil)
+	a.expect(400, a.alice, "GET", "/api/v1/songsterr/song?url=https://example.com/", nil)
 }

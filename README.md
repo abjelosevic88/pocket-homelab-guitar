@@ -45,7 +45,7 @@
 - **Speed trainer**: start slow; after a few clean loops it speeds up by itself until your goal, and keeps your best speed per section and per song.
 - **Live fretboard** under the tab showing what is being played (left-handed too).
 - **Play along with the record**: link a song to its recording in your Navidrome; it plays in sync with the tab at your practice speed, alone or together with the tab's sound.
-- **Library**: upload files (drop them anywhere), paste a Songsterr address, or point to folders in Pocket Files: new files appear by themselves, changed ones are read again, deleted ones are marked. Status (want to learn, learning, polishing, can play it), favourites, difficulty, tags, notes, goal speed.
+- **Library**: upload files (drop them anywhere), search Songsterr and add songs with one click, or point to folders in Pocket Files: new files appear by themselves, changed ones are read again, deleted ones are marked. Status (want to learn, learning, polishing, can play it), favourites, difficulty, tags, notes, goal speed.
 - **Practice log**: every minute you play is saved as you go; add lessons or scales by hand; streaks, a daily goal, minutes per day, time per song, the year heatmap, when you play.
 - **Tools**: a tuner with thirteen tunings and reference tones, a metronome with subdivisions, accents and its own speed trainer, a timer for practice without a tab.
 - **Setlists**: songs in order; play them one after another.
@@ -61,7 +61,7 @@ docker run -d --name pocket-guitar -p 8080:8080 -v ./data:/data \
   ghcr.io/abjelosevic88/pocket-homelab-guitar:latest
 ```
 
-or `docker compose up -d` with [docker-compose.yml](docker-compose.yml). Open it, create the first account and drop in your tabs. "From Songsterr" needs a [songsterr-downloader](https://github.com/Metaphysics0/songsterr-downloader) container (`TAB_CONVERTER_URL`). All options: [docs/configuration.md](docs/configuration.md). API: [docs/api.md](docs/api.md). Backups: [docs/backup.md](docs/backup.md).
+or `docker compose up -d` with [docker-compose.yml](docker-compose.yml). Open it, create the first account and drop in your tabs. Songsterr search and import are built in: the server fetches a song's data and your browser turns it into a Guitar Pro file (conversion ported from [songsterr-downloader](https://github.com/Metaphysics0/songsterr-downloader), MIT). All options: [docs/configuration.md](docs/configuration.md). API: [docs/api.md](docs/api.md). Backups: [docs/backup.md](docs/backup.md).
 
 ## With Pocket Core
 

@@ -9,6 +9,7 @@ import { Icon } from './icons'
 import { Modal, Segmented, Spinner, useDebounce, useToast } from './ui'
 import { Cover } from './TabCard'
 import { tuningName } from '../player/music'
+import { importFromSongsterr, type ImportStep } from '../songsterr/import'
 
 export type AddMode = 'upload' | 'songsterr' | 'folder'
 
@@ -38,7 +39,7 @@ export function AddTabsModal({ onClose, onAdded, initial = 'upload', files: drop
     <Modal title="Add tabs" onClose={onClose} size="lg">
       <Segmented<AddMode> className="add-modes" value={mode} onChange={setMode} options={[
         { value: 'upload', label: 'Upload files' },
-        { value: 'songsterr', label: 'Songsterr', disabled: !settings?.songsterr_available, title: settings?.songsterr_available ? undefined : 'Needs the tab converter on this server' },
+        { value: 'songsterr', label: 'Songsterr' },
         { value: 'folder', label: 'From Pocket Files' },
       ]} />
       {mode === 'upload' && <UploadPane onAdded={onAdded} onClose={onClose} dropped={dropped} />}
@@ -132,23 +133,25 @@ function SongsterrPane({ onAdded, onClose }: { onAdded: (t: Tab[]) => void; onCl
     return () => { live = false }
   }, [dq, isURL])
 
+  const [step, setStep] = useState<Record<string, string>>({})
   const add = async (url: string) => {
     setAdding(a => ({ ...a, [url]: 'busy' })); setErrs(e => ({ ...e, [url]: '' }))
+    const words: Record<ImportStep, string> = { reading: 'Reading the song…', tracks: 'Tracks', building: 'Building the tab…', saving: 'Saving…' }
     try {
-      const r = await api.post<{ tab: Tab; existing: boolean }>(`${V1}/tabs/songsterr`, { url })
+      const r = await importFromSongsterr(url, (s, d, t) => setStep(x => ({ ...x, [url]: s === 'tracks' && t ? `${words.tracks} ${d} of ${t}…` : words[s] })))
       setAdding(a => ({ ...a, [url]: r.tab.id }))
       if (!r.existing) onAdded([r.tab])
     } catch (e) {
       setAdding(a => { const n = { ...a }; delete n[url]; return n })
-      setErrs(x => ({ ...x, [url]: e instanceof ApiError ? e.message : String(e) }))
-    }
+      setErrs(x => ({ ...x, [url]: e instanceof ApiError ? e.message : (e as Error).message || String(e) }))
+    } finally { setStep(x => { const n = { ...x }; delete n[url]; return n }) }
   }
   const open = (id: number) => { onClose(); navigate(`/tab/${id}`) }
   const action = (url: string, inLibrary: number) => {
     const st = adding[url]
     const id = typeof st === 'number' ? st : inLibrary
     if (id) return <button type="button" className="btn sm" onClick={() => open(id)}><Icon name="play" size={14} />{typeof st === 'number' ? 'Added · open' : 'In library · open'}</button>
-    return <button type="button" className="btn sm primary" disabled={st === 'busy'} onClick={() => add(url)}>{st === 'busy' ? <><Spinner />Getting it…</> : <><Icon name="plus" size={14} />Add</>}</button>
+    return <button type="button" className="btn sm primary" disabled={st === 'busy'} onClick={() => add(url)}>{st === 'busy' ? <><Spinner /><span className="ss-step tnum">{step[url] || 'Getting it…'}</span></> : <><Icon name="plus" size={14} />Add</>}</button>
   }
 
   return (
@@ -165,7 +168,7 @@ function SongsterrPane({ onAdded, onClose }: { onAdded: (t: Tab[]) => void; onCl
           {errs[q.trim()] && <div className="callout warn"><Icon name="alert" size={15} /><div>{errs[q.trim()]}</div></div>}
         </div>
       ) : hits === null ? (
-        <p className="muted small ss-hint">Find a song on songsterr.com and add it with every track. Each song takes a few seconds to turn into a Guitar Pro file.</p>
+        <p className="muted small ss-hint">Find a song on songsterr.com and add it with every track. It is turned into a Guitar Pro file right here in your browser, which takes a few seconds.</p>
       ) : (
         <>
           {searchErr && <div className="callout warn"><Icon name="alert" size={15} /><div>{searchErr}</div></div>}

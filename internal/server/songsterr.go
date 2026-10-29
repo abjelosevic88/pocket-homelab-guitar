@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -11,6 +10,7 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,133 +19,117 @@ import (
 
 // ---- adding a tab from Songsterr ----
 //
-// Songsterr no longer hands out Guitar Pro files; a converter
-// (songsterr-downloader, TAB_CONVERTER_URL) rebuilds one from the tab's
-// data. One address at a time, on purpose: no bulk downloads.
+// Songsterr no longer hands out Guitar Pro files: a song is its tab page
+// (artist, title, the revision and the tracks) plus one JSON file per
+// track on Songsterr's CDN. The server fetches those two things (a
+// browser cannot: Songsterr does not allow other sites to read them) and
+// the browser turns them into a Guitar Pro 7 file with alphaTab
+// (web/src/songsterr), then uploads it like any other tab. One song at
+// a time, on purpose: no bulk downloads.
 
 var songsterrURL = regexp.MustCompile(`(?i)^https?://(?:www\.)?songsterr\.com/a/wsa/[\w~%.-]*-?tab-s(\d+)`)
 
 var stateScript = regexp.MustCompile(`(?s)<script id="state"[^>]*>(.*?)</script>`)
 
-func (s *Server) songsterrAvailable() bool { return s.cfg.TabConverterURL != "" }
+// Songsterr's two CDNs for the per-track JSON (the second is tried when the first has nothing).
+var songsterrCDNs = []string{"https://dqsljvtekg760.cloudfront.net", "https://d3d3l6a6rcgkaf.cloudfront.net"}
 
-// songsterrNames reads artist and title from the tab page's embedded state.
-func (s *Server) songsterrNames(ctx context.Context, u string) (artist, title string, err error) {
+var songsterrImage = regexp.MustCompile(`^[A-Za-z0-9_-]{1,100}$`)
+
+func (s *Server) songsterrGet(ctx context.Context, u string, accept string, limit int64) ([]byte, int, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
-		return "", "", err
+		return nil, 0, err
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; "+s.cfg.UserAgent+")")
+	req.Header.Set("Accept", accept)
+	req.Header.Set("Referer", "https://www.songsterr.com/")
 	res, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
 	if err != nil {
-		return "", "", err
+		return nil, 0, err
 	}
 	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		return "", "", fmt.Errorf("Songsterr answered HTTP %d", res.StatusCode)
-	}
-	b, _ := io.ReadAll(io.LimitReader(res.Body, 8<<20))
-	m := stateScript.FindSubmatch(b)
+	b, err := io.ReadAll(io.LimitReader(res.Body, limit))
+	return b, res.StatusCode, err
+}
+
+// handleSongsterrSong reads a tab page: {song_id, revision_id, image, title, artist, url, tracks[]}.
+func (s *Server) handleSongsterrSong(w http.ResponseWriter, r *http.Request) {
+	u := strings.TrimSpace(r.URL.Query().Get("url"))
+	m := songsterrURL.FindStringSubmatch(u)
 	if m == nil {
-		return "", "", errors.New("Songsterr's page has no song data (is this a tab page?)")
+		writeErr(w, http.StatusBadRequest, "that is not the address of a Songsterr tab (it looks like songsterr.com/a/wsa/…-tab-s12345)")
+		return
+	}
+	b, code, err := s.songsterrGet(r.Context(), u, "text/html", 8<<20)
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, "Songsterr did not answer: "+err.Error())
+		return
+	}
+	if code != http.StatusOK {
+		writeErr(w, http.StatusBadGateway, fmt.Sprintf("Songsterr answered HTTP %d", code))
+		return
+	}
+	sm := stateScript.FindSubmatch(b)
+	if sm == nil {
+		writeErr(w, http.StatusBadGateway, "Songsterr's page has no song data (is this a tab page?)")
+		return
 	}
 	var st struct {
 		Meta struct {
 			Current struct {
-				Artist string `json:"artist"`
-				Title  string `json:"title"`
+				SongID     int             `json:"songId"`
+				RevisionID int             `json:"revisionId"`
+				Image      string          `json:"image"`
+				Title      string          `json:"title"`
+				Artist     string          `json:"artist"`
+				Tracks     json.RawMessage `json:"tracks"`
 			} `json:"current"`
 		} `json:"meta"`
 	}
-	if err := json.Unmarshal([]byte(html.UnescapeString(string(m[1]))), &st); err != nil {
-		if err := json.Unmarshal(m[1], &st); err != nil {
-			return "", "", errors.New("could not read Songsterr's song data")
+	if err := json.Unmarshal(sm[1], &st); err != nil {
+		if err := json.Unmarshal([]byte(html.UnescapeString(string(sm[1]))), &st); err != nil {
+			writeErr(w, http.StatusBadGateway, "could not read Songsterr's song data")
+			return
 		}
 	}
-	return strings.TrimSpace(st.Meta.Current.Artist), strings.TrimSpace(st.Meta.Current.Title), nil
+	c := st.Meta.Current
+	if c.SongID == 0 || c.RevisionID == 0 || !songsterrImage.MatchString(c.Image) {
+		writeErr(w, http.StatusBadGateway, "Songsterr's song data is missing the revision of the tab")
+		return
+	}
+	tracks := c.Tracks
+	if len(tracks) == 0 || tracks[0] != '[' {
+		tracks = json.RawMessage("[]")
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"song_id": c.SongID, "revision_id": c.RevisionID, "image": c.Image,
+		"title": strings.TrimSpace(c.Title), "artist": strings.TrimSpace(c.Artist), "url": u, "tracks": tracks})
 }
 
-// songsterrFile asks the converter for the Guitar Pro file.
-func (s *Server) songsterrFile(ctx context.Context, u string) ([]byte, error) {
-	body, _ := json.Marshal(map[string]string{"byLinkUrl": u})
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(s.cfg.TabConverterURL, "/")+"/api/download/byRevisionJson", strings.NewReader(string(body)))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	res, err := (&http.Client{Timeout: 5 * time.Minute}).Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("the tab converter did not answer: %w", err)
-	}
-	defer res.Body.Close()
-	var out struct {
-		File  []int  `json:"file"`
-		Error string `json:"error"`
-	}
-	if err := json.NewDecoder(io.LimitReader(res.Body, 200<<20)).Decode(&out); err != nil {
-		return nil, fmt.Errorf("the tab converter sent something unexpected (HTTP %d)", res.StatusCode)
-	}
-	if out.Error != "" {
-		return nil, fmt.Errorf("the tab converter: %s", out.Error)
-	}
-	if len(out.File) == 0 {
-		return nil, errors.New("the tab converter sent an empty file")
-	}
-	data := make([]byte, len(out.File))
-	for i, v := range out.File {
-		data[i] = byte(v)
-	}
-	return data, nil
-}
-
-func (s *Server) handleSongsterr(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	uid := actorID(ctx)
-	if !s.songsterrAvailable() {
-		writeErr(w, http.StatusServiceUnavailable, "adding tabs from Songsterr needs the tab converter (TAB_CONVERTER_URL) on this box")
+// handleSongsterrPart passes one track's JSON through from Songsterr's CDN.
+func (s *Server) handleSongsterrPart(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	song, err1 := strconv.Atoi(q.Get("song"))
+	rev, err2 := strconv.Atoi(q.Get("revision"))
+	part, err3 := strconv.Atoi(q.Get("part"))
+	image := q.Get("image")
+	if err1 != nil || err2 != nil || err3 != nil || song <= 0 || rev <= 0 || part < 0 || part > 200 || !songsterrImage.MatchString(image) {
+		writeErr(w, http.StatusBadRequest, "song, revision, image and part are needed")
 		return
 	}
-	var in struct {
-		URL string `json:"url"`
-	}
-	if err := decode(r, &in); err != nil {
-		writeErr(w, http.StatusBadRequest, "invalid json")
-		return
-	}
-	u := strings.TrimSpace(in.URL)
-	m := songsterrURL.FindStringSubmatch(u)
-	if m == nil {
-		writeErr(w, http.StatusBadRequest, "paste the address of a Songsterr tab (it looks like songsterr.com/a/wsa/…-tab-s12345)")
-		return
-	}
-	cctx, cancel := context.WithTimeout(ctx, 6*time.Minute)
-	defer cancel()
-	artist, title, err := s.songsterrNames(cctx, u)
-	if err != nil {
-		writeErr(w, http.StatusBadGateway, err.Error())
-		return
-	}
-	data, err := s.songsterrFile(cctx, u)
-	if err != nil {
-		writeErr(w, http.StatusBadGateway, err.Error())
-		return
-	}
-	name := safeFileName(firstNonEmpty(artist, "Unknown artist")+" - "+firstNonEmpty(title, "Song "+m[1])) + ".gp"
-	t, existing, err := s.addTab(ctx, uid, newTab{name: name, data: data, source: "songsterr", ref: u, title: title, artist: artist})
-	if err != nil {
-		writeErr(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	if !existing {
-		if moved := s.keepInFolder(ctx, s.clients(ctx, uid), t, data); moved != nil {
-			t = moved
+	lastCode := 0
+	for _, cdn := range songsterrCDNs {
+		b, code, err := s.songsterrGet(r.Context(), fmt.Sprintf("%s/%d/%d/%s/%d.json", cdn, song, rev, image, part), "application/json", 32<<20)
+		if err != nil || code != http.StatusOK || !json.Valid(b) {
+			lastCode = code
+			continue
 		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "private, max-age=86400")
+		_, _ = w.Write(b)
+		return
 	}
-	code := http.StatusCreated
-	if existing {
-		code = http.StatusOK
-	}
-	writeJSON(w, code, map[string]any{"tab": t, "existing": existing})
+	writeErr(w, http.StatusBadGateway, fmt.Sprintf("Songsterr has no data for track %d of this song (HTTP %d)", part, lastCode))
 }
 
 // ---- searching Songsterr ----
@@ -277,7 +261,7 @@ func (s *Server) handleSongsterrSearch(w http.ResponseWriter, r *http.Request) {
 	tabs, _, _ := s.store.ListTabs(ctx, uid, store.TabFilter{})
 	have := map[string]int64{}
 	for _, t := range tabs {
-		if m := songsterrURL.FindStringSubmatch(t.SourceRef); m != nil {
+		if m := songsterrURL.FindStringSubmatch(firstNonEmpty(t.OriginURL, t.SourceRef)); m != nil {
 			have["id:"+m[1]] = t.ID
 		}
 		have["name:"+strings.ToLower(t.Artist)+"|"+strings.ToLower(t.Title)] = t.ID
@@ -302,5 +286,5 @@ func (s *Server) handleSongsterrSearch(w http.ResponseWriter, r *http.Request) {
 		ej := strings.Contains(lq, strings.ToLower(out[j].Title))
 		return ei && !ej
 	})
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "results": out, "available": s.songsterrAvailable()})
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "results": out})
 }

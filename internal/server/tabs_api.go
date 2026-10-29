@@ -63,6 +63,7 @@ type newTab struct {
 	data     []byte
 	source   string // upload | files | songsterr | import
 	ref      string
+	origin   string // the Songsterr address it came from
 	folderID *int64
 	stamp    string
 	status   string
@@ -93,7 +94,7 @@ func (s *Server) addTab(ctx context.Context, uid int64, in newTab) (*store.Tab, 
 		return nil, false, fmt.Errorf("save the file: %w", err)
 	}
 	t := &store.Tab{Title: meta.Title, Artist: meta.Artist, Album: meta.Album, Tabber: meta.Tabber, Format: meta.Format,
-		FileName: filepath.Base(in.name), Size: int64(len(in.data)), SHA256: sha, Source: in.source, SourceRef: in.ref,
+		FileName: filepath.Base(in.name), Size: int64(len(in.data)), SHA256: sha, Source: in.source, SourceRef: in.ref, OriginURL: in.origin,
 		FolderID: in.folderID, SourceStamp: in.stamp, Status: in.status, Tags: in.tags, NamesFrom: "file"}
 	if in.title != "" {
 		t.Title, t.NamesFrom = in.title, "person"
@@ -185,6 +186,15 @@ func (s *Server) handleUploadTabs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	status, tags := r.FormValue("status"), r.FormValue("tags")
+	// a file the browser built from Songsterr (web/src/songsterr): its address and names come along
+	source, origin, title, artist := "upload", "", "", ""
+	if o := strings.TrimSpace(r.FormValue("songsterr_url")); o != "" {
+		if !songsterrURL.MatchString(o) {
+			writeErr(w, http.StatusBadRequest, "songsterr_url is not a Songsterr tab address")
+			return
+		}
+		source, origin, title, artist = "songsterr", o, trimTo(r.FormValue("title"), 200), trimTo(r.FormValue("artist"), 200)
+	}
 	added, existing, failed := []store.Tab{}, []store.Tab{}, []uploadError{}
 	cl := s.clients(ctx, uid)
 	for _, fh := range files {
@@ -199,7 +209,7 @@ func (s *Server) handleUploadTabs(w http.ResponseWriter, r *http.Request) {
 			failed = append(failed, uploadError{fh.Filename, err.Error()})
 			continue
 		}
-		t, old, err := s.addTab(ctx, uid, newTab{name: fh.Filename, data: data, source: "upload", status: status, tags: tags})
+		t, old, err := s.addTab(ctx, uid, newTab{name: fh.Filename, data: data, source: source, ref: origin, origin: origin, status: status, tags: tags, title: title, artist: artist})
 		if err != nil {
 			failed = append(failed, uploadError{fh.Filename, err.Error()})
 			continue

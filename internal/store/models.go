@@ -61,6 +61,7 @@ type Tab struct {
 	Source        string          `json:"source"`
 	SourceRef     string          `json:"source_ref"`
 	SourceLabel   string          `json:"source_label"`
+	OriginURL     string          `json:"origin_url"`
 	FolderID      *int64          `json:"folder_id"`
 	SourceStamp   string          `json:"-"`
 	SourceMissing bool            `json:"source_missing"`
