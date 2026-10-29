@@ -107,6 +107,8 @@ export class TabEngine {
     settings.display.scale = view.zoom / 100
     settings.display.layoutMode = view.layout === 'horizontal' ? at.LayoutMode.Horizontal : at.LayoutMode.Page
     settings.display.staveProfile = staveProfile(at, view.notation)
+    settings.notation.rhythmMode = rhythmMode(at, view.notation)
+    settings.notation.rhythmHeight = 28
     settings.display.padding = [12, 20, 12, 20]
     const pl = settings.player
     pl.enablePlayer = true
@@ -217,7 +219,7 @@ export class TabEngine {
     let render = false
     if (old.zoom !== v.zoom) { s.display.scale = v.zoom / 100; render = true }
     if (old.layout !== v.layout) { s.display.layoutMode = v.layout === 'horizontal' ? at.LayoutMode.Horizontal : at.LayoutMode.Page; render = true }
-    if (old.notation !== v.notation) { s.display.staveProfile = staveProfile(at, v.notation); render = true }
+    if (old.notation !== v.notation) { s.display.staveProfile = staveProfile(at, v.notation); s.notation.rhythmMode = rhythmMode(at, v.notation); render = true }
     if (old.autoScroll !== v.autoScroll) { s.player.scrollMode = v.autoScroll ? at.ScrollMode.Continuous : at.ScrollMode.Off }
     if (old.transpose !== v.transpose) { s.notation.displayTranspositionPitches = (api.score?.tracks || []).map(() => v.transpose); render = true }
     if (JSON.stringify(old.colors) !== JSON.stringify(v.colors)) { this.applyColors(v.colors, false); render = true }
@@ -335,6 +337,11 @@ export class TabEngine {
     try { this.api?.destroy() } catch { /* already gone */ }
     this.api = null
   }
+}
+
+/** Tab only: stems and beams under the fret numbers (the rhythm), connected like in notation. With notes shown, they carry it. */
+function rhythmMode(at: AlphaTab, n: Notation) {
+  return n === 'tab' ? at.TabRhythmMode.ShowWithBars : at.TabRhythmMode.Hidden
 }
 
 function staveProfile(at: AlphaTab, n: Notation) {
