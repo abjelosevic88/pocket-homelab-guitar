@@ -31,7 +31,7 @@ export async function analyzePending(tabs: Tab[], onDone: (t: Tab) => void, limi
     const at = await loadAlphaTab()
     for (const t of todo) {
       try {
-        const res = await fetch(`${V1}/tabs/${t.id}/file`, { credentials: 'same-origin' })
+        const res = await fetch(`${V1}/tabs/${t.id}/file`, { credentials: 'same-origin', cache: 'no-cache' })
         if (!res.ok) continue
         const bytes = new Uint8Array(await res.arrayBuffer())
         const score = at.importer.ScoreLoader.loadScoreFromBytes(bytes)

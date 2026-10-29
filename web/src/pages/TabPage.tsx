@@ -116,7 +116,7 @@ function Player({ tabId }: { tabId: number }) {
         setTab(t); setSections(t.sections || [])
         const p = t.player || {}
         setPrefs(p)
-        const res = await fetch(`${V1}/tabs/${tabId}/file`, { credentials: 'same-origin' })
+        const res = await fetch(`${V1}/tabs/${tabId}/file`, { credentials: 'same-origin', cache: 'no-cache' })
         if (!res.ok) throw new ApiError(res.status, res.status === 404 ? 'The file of this tab is missing.' : `The file could not be loaded (${res.status}).`)
         const buf = await res.arrayBuffer()
         if (gone || !scoreEl.current || !scrollEl.current) return

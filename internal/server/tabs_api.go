@@ -264,7 +264,9 @@ func (s *Server) handleTabFile(w http.ResponseWriter, r *http.Request) {
 	fi, _ := f.Stat()
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("ETag", `"`+t.SHA256+`"`)
-	w.Header().Set("Cache-Control", "private, max-age=86400")
+	// a tab's file can change (a new version in its Pocket Files folder): browsers check every
+	// time and get "unchanged" (304, by the ETag) when it did not
+	w.Header().Set("Cache-Control", "private, no-cache")
 	disp := "inline"
 	if queryBool(r, "dl") {
 		disp = "attachment"
