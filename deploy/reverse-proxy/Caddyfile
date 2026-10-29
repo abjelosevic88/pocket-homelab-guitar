@@ -1,0 +1,5 @@
+# Pocket Guitar behind Caddy. Homepage widgets and linked apps send their own
+# bearer token to /api/*.
+guitar.example.com {
+	reverse_proxy pocket-guitar:8080
+}

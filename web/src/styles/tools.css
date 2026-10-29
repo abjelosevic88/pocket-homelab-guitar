@@ -1,0 +1,204 @@
+/* ---------- Pocket Guitar: tools (tuner, metronome, timer) and the practice page ---------- */
+
+/* Fallbacks for the shared chart pieces (zero specificity: guitar.css wins when it has them). */
+:where(.gt-practice) :where(.chart) { position: relative; width: 100%; }
+:where(.gt-practice) :where(.chart svg) { width: 100%; display: block; overflow: visible; }
+:where(.gt-practice) :where(.chart .grid) { stroke: var(--border); stroke-width: 1; }
+:where(.gt-practice) :where(.chart .tick) { font-size: 11px; fill: var(--muted); }
+:where(.gt-practice) :where(.chart .goal) { stroke: var(--muted); stroke-dasharray: 5 4; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+:where(.gt-practice) :where(.chart .goal-label) { font-size: 10.5px; fill: var(--muted); }
+:where(.gt-practice) :where(.chart .cursor) { stroke: var(--text); opacity: .3; vector-effect: non-scaling-stroke; }
+:where(.gt-practice) :where(.chart-tip) { position: absolute; top: 0; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 4px 8px; border-radius: 7px; font-size: 12px; pointer-events: none; white-space: nowrap; display: flex; flex-direction: column; align-items: center; line-height: 1.3; }
+:where(.gt-practice) :where(.ring) { position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+:where(.gt-practice) :where(.ring-bg) { fill: none; stroke: var(--surface-2); }
+:where(.gt-practice) :where(.ring-fg) { fill: none; transition: stroke-dasharray .4s; }
+:where(.gt-practice) :where(.ring-label) { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+:where(.gt-practice) :where(.bars) { display: flex; align-items: flex-end; gap: 6px; }
+:where(.gt-practice) :where(.bars-col) { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; gap: 4px; overflow: hidden; }
+:where(.gt-practice) :where(.bars-bar) { width: 100%; max-width: 44px; border-radius: 5px 5px 2px 2px; min-height: 2px; transition: height .3s; }
+:where(.gt-practice) :where(.bars-val) { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+:where(.gt-practice) :where(.bars-lbl) { font-size: 11px; color: var(--muted); white-space: nowrap; }
+:where(.gt-practice) :where(.heatmap) { position: relative; }
+:where(.gt-practice) :where(.hm, .hm-legend i) { fill: var(--surface-2); background: var(--surface-2); }
+:where(.gt-practice) :where(.hm-1) { fill: color-mix(in srgb, var(--accent) 28%, var(--surface-2)); background: color-mix(in srgb, var(--accent) 28%, var(--surface-2)); }
+:where(.gt-practice) :where(.hm-2) { fill: color-mix(in srgb, var(--accent) 50%, var(--surface-2)); background: color-mix(in srgb, var(--accent) 50%, var(--surface-2)); }
+:where(.gt-practice) :where(.hm-3) { fill: color-mix(in srgb, var(--accent) 75%, var(--surface-2)); background: color-mix(in srgb, var(--accent) 75%, var(--surface-2)); }
+:where(.gt-practice) :where(.hm-4) { fill: var(--accent); background: var(--accent); }
+:where(.gt-practice) :where(.hm-legend) { display: flex; align-items: center; gap: 3px; justify-content: flex-end; margin-top: 6px; }
+:where(.gt-practice) :where(.hm-legend i) { display: inline-block; width: 11px; height: 11px; border-radius: 3px; }
+:where(.gt-practice) :where(.stat-l) { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+:where(.gt-practice) :where(.flame-on) { color: #ea580c; }
+:where(.gt-practice) :where(.pad) { padding: 8px 18px 18px; }
+
+.gt-tools .hidden, .gt-practice .hidden { visibility: hidden; }
+.gt-center { text-align: center; margin: 0; }
+
+/* ---- the tools page ---- */
+.gt-tools { max-width: 760px; margin: 0 auto; }
+.gt-tools-switch { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.gt-tools-switch .segmented button { height: 32px; padding: 0 14px; }
+.gt-metro-pill { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 4px 0 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: 12.5px; font-weight: 600; }
+.gt-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); opacity: .35; transition: opacity .08s; }
+.gt-pulse.on { opacity: 1; }
+.gt-tool-card { padding: 20px; }
+.gt-tool-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; }
+.gt-tuning { flex: 1 1 260px; max-width: 360px; }
+.gt-a4 { display: inline-flex; align-items: center; gap: 4px; }
+.gt-a4-v { min-width: 56px; text-align: center; font-weight: 600; font-size: 13px; }
+
+/* tuner */
+.gt-tuner { display: flex; flex-direction: column; gap: 18px; }
+.gt-dial { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0 0; --dial: var(--accent); }
+.gt-dial.ok { --dial: var(--success); }
+.gt-gauge { width: min(100%, 360px); height: auto; display: block; overflow: visible; }
+.gt-arc { fill: none; stroke: var(--surface-3); stroke-width: 10; stroke-linecap: round; }
+.gt-zone { fill: none; stroke: var(--success); stroke-width: 10; opacity: .55; }
+.gt-tick { stroke: var(--faint); stroke-width: 1.5; }
+.gt-tick0 { stroke: var(--text-2); stroke-width: 2.2; }
+.gt-glabel { font-size: 14px; fill: var(--muted); }
+.gt-needle { transform-origin: 120px 120px; transform-box: view-box; transition: transform .14s linear; }
+.gt-needle line { stroke: var(--dial); stroke-width: 3.5; stroke-linecap: round; }
+.gt-needle circle { fill: var(--dial); }
+.gt-dial.quiet .gt-needle line, .gt-dial.quiet .gt-needle circle { opacity: .35; }
+.gt-note { display: flex; align-items: flex-start; justify-content: center; height: 76px; margin-top: -10px; font-variant-numeric: tabular-nums; }
+.gt-note-name { font-size: 64px; line-height: 76px; font-weight: 700; letter-spacing: -.03em; color: var(--dial); min-width: 1ch; text-align: center; transition: color .2s; }
+.gt-dial.quiet .gt-note-name { color: var(--muted); }
+.gt-note-oct { font-size: 20px; line-height: 1; margin-top: 14px; color: var(--muted); font-weight: 600; width: 1.2ch; }
+.gt-cents { height: 22px; font-size: 15px; font-weight: 650; color: var(--text-2); }
+.gt-dial.ok .gt-cents { color: var(--success); }
+.gt-strobe { width: min(100%, 320px); height: 14px; border-radius: 7px; margin: 6px 0 2px;
+  background-image: repeating-linear-gradient(90deg, color-mix(in srgb, var(--dial) 55%, transparent) 0 6px, transparent 6px 14px);
+  background-color: var(--surface-2); opacity: .9; }
+.gt-dial.quiet .gt-strobe { opacity: .35; }
+.gt-freq { height: 18px; }
+.gt-hint { height: 22px; font-size: 14px; color: var(--text-2); font-weight: 550; }
+.gt-strings { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.gt-string { position: relative; width: 58px; height: 64px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: inherit; transition: border-color .15s, background .15s; }
+.gt-string:hover { background: var(--surface-2); }
+.gt-string.active { border-color: var(--accent); background: var(--accent-soft); }
+.gt-string.done .gt-string-mark { color: var(--success); }
+.gt-string-n { font-size: 19px; font-weight: 700; line-height: 1; }
+.gt-string-n small { font-size: 11px; color: var(--muted); font-weight: 600; margin-left: 1px; }
+.gt-string-mark { color: var(--faint); height: 14px; display: inline-flex; }
+.gt-mic { display: flex; justify-content: center; }
+.gt-mic .btn { min-width: 220px; justify-content: center; }
+
+/* metronome */
+.gt-metro { display: flex; flex-direction: column; gap: 22px; }
+.gt-bpm-block { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.gt-beats { display: grid; gap: 8px; width: min(100%, 420px); height: 18px; }
+.gt-beat { height: 18px; border-radius: 6px; background: var(--surface-3); transition: background .06s; }
+.gt-beat.group { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent); }
+.gt-beat.accent { box-shadow: inset 0 0 0 2px var(--accent); }
+.gt-beat.on { background: color-mix(in srgb, var(--accent) 60%, var(--surface-3)); }
+.gt-beat.accent.on { background: var(--accent); }
+.gt-bpm-row { display: flex; align-items: center; gap: 18px; }
+.gt-round { border-radius: 50%; width: 48px; height: 48px; padding: 0; justify-content: center; }
+.gt-bpm { display: flex; flex-direction: column; align-items: center; }
+.gt-bpm-in { width: 3.2ch; font-size: 64px; font-weight: 700; letter-spacing: -.03em; text-align: center; border: 0; background: transparent; padding: 0; height: 72px; color: var(--text); box-shadow: none; }
+.gt-bpm-in:focus { box-shadow: none; border: 0; background: var(--surface-2); border-radius: 12px; }
+.gt-bpm-u { color: var(--muted); font-size: 13px; font-weight: 550; margin-top: -2px; white-space: nowrap; }
+.gt-range { width: min(100%, 420px); accent-color: var(--accent); height: 28px; }
+.gt-go-row { display: flex; gap: 10px; justify-content: center; }
+.gt-go { min-width: 150px; justify-content: center; }
+.gt-tap { min-width: 90px; justify-content: center; }
+.gt-trainer-line { height: 18px; }
+.gt-metro-opts { display: grid; gap: 16px; border-top: 1px solid var(--border); padding-top: 18px; }
+.gt-wrap-seg { flex-wrap: wrap; }
+.gt-opt-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.gt-check { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13.5px; }
+.gt-vol { display: inline-flex; align-items: center; gap: 8px; }
+.gt-vol input { width: 140px; accent-color: var(--accent); }
+.gt-trainer { display: grid; gap: 12px; padding: 14px; border-radius: 12px; background: var(--surface-2); }
+.gt-trainer-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; transition: opacity .15s; }
+.gt-trainer-grid.off { opacity: .5; }
+.gt-num { display: flex; flex-direction: column; gap: 4px; }
+.gt-num .label { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.gt-num-in { display: flex; align-items: center; gap: 6px; }
+.gt-num-in input { width: 64px; text-align: right; font-variant-numeric: tabular-nums; }
+.gt-played { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 14px; }
+
+/* timer */
+.gt-timer { display: flex; flex-direction: column; gap: 20px; }
+.gt-what { margin-bottom: 4px; }
+.gt-clock { font-size: 72px; font-weight: 700; letter-spacing: -.03em; text-align: center; line-height: 1; padding: 10px 0; color: var(--text-2); }
+.gt-clock.running { color: var(--accent-ink); }
+.gt-finish { display: grid; gap: 12px; }
+.gt-finish-btns { justify-content: flex-start; }
+
+/* the practice form */
+.gt-form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+
+/* ---- the practice page ---- */
+.gt-practice { display: flex; flex-direction: column; gap: 16px; }
+.gt-practice .page-header { margin-bottom: 4px; }
+.gt-kpis { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 10px; }
+.gt-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.gt-kpi-today { flex-direction: row; align-items: center; gap: 12px; }
+.gt-ring-n { font-size: 15px; font-weight: 700; }
+.gt-kpi-v { font-size: 22px; font-weight: 700; letter-spacing: -.02em; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.gt-kpi-v small { font-size: 12.5px; font-weight: 550; color: var(--muted); letter-spacing: 0; }
+.gt-chart-box { min-height: 190px; }
+.gt-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.gt-two > * { min-width: 0; }
+.gt-songbars { display: grid; gap: 9px; }
+.gt-sb { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.gt-sb-l { display: flex; flex-direction: column; min-width: 0; color: inherit; line-height: 1.25; }
+a.gt-sb-l:hover .gt-sb-t { color: var(--accent-ink); text-decoration: underline; }
+.gt-sb-t { font-weight: 600; font-size: 13.5px; }
+.gt-sb-a { font-size: 12px; color: var(--muted); }
+.gt-sb-track { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.gt-sb-track span { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+.gt-sb-v { font-size: 12.5px; color: var(--text-2); min-width: 64px; text-align: right; }
+.gt-when { display: grid; gap: 18px; }
+.gt-hours .bars { gap: 2px; }
+.gt-hours .bars-val { display: none; }
+.gt-hours .bars-col:not(:nth-child(3n+1)) .bars-lbl { visibility: hidden; }
+.gt-heat { overflow-x: auto; padding-bottom: 2px; }
+.gt-heat .heatmap svg { max-width: none; }
+.gt-mastered { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.gt-mastered a { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 8px; color: inherit; }
+.gt-mastered a:hover { background: var(--surface-2); }
+.gt-mastered .ellipsis { flex: 1; min-width: 0; }
+.gt-gold { color: var(--star); flex-shrink: 0; }
+.gt-journal { padding-bottom: 6px; }
+.gt-day-h { display: flex; justify-content: space-between; gap: 10px; padding: 12px 18px 6px; font-size: 12px; font-weight: 650; color: var(--muted); border-top: 1px solid var(--border); text-transform: uppercase; letter-spacing: .04em; }
+.gt-journal section:first-child .gt-day-h { border-top: 0; }
+.gt-session { display: flex; align-items: flex-start; gap: 12px; padding: 8px 12px 8px 18px; }
+.gt-session:hover { background: var(--hover); }
+.gt-session-ico { width: 32px; height: 32px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent); flex-shrink: 0; }
+.gt-session-ico.free { background: var(--surface-2); color: var(--text-2); }
+.gt-session-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.gt-session-t { font-weight: 600; }
+.gt-session-t a { color: inherit; }
+.gt-session-t a:hover { color: var(--accent-ink); text-decoration: underline; }
+.gt-session-note { font-size: 13px; color: var(--text-2); margin-top: 3px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.gt-more { display: flex; justify-content: center; padding: 12px 18px 8px; }
+.gt-practice .card-head .chip { flex-shrink: 0; }
+
+@media (max-width: 1099px) {
+  .gt-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .gt-tool-card { padding: 16px 14px; }
+  .gt-tools-switch { gap: 8px; }
+  .gt-metro-pill.hidden { display: none; }
+  .gt-tools-switch .segmented { width: 100%; display: flex; }
+  .gt-tools-switch .segmented button { flex: 1; padding: 0 6px; }
+  .gt-tuning { max-width: none; flex-basis: 100%; }
+  .gt-note-name { font-size: 56px; }
+  .gt-string { width: 48px; height: 58px; border-radius: 12px; }
+  .gt-strings { gap: 6px; }
+  .gt-bpm-in { font-size: 56px; height: 64px; }
+  .gt-bpm-row { gap: 12px; }
+  .gt-trainer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gt-clock { font-size: 60px; }
+  .gt-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gt-two { grid-template-columns: minmax(0, 1fr); }
+  .gt-kpi { padding: 10px 12px; }
+  .gt-kpi-v { font-size: 19px; }
+  .gt-kpi-today, .gt-kpi:last-child { grid-column: 1 / -1; }
+  .gt-session { padding-left: 14px; }
+  .gt-day-h { padding-left: 14px; padding-right: 14px; }
+  .gt-sb { grid-template-columns: minmax(0, 1fr) 70px auto; }
+}

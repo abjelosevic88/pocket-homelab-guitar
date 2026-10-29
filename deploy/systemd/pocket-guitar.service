@@ -1,0 +1,23 @@
+[Unit]
+Description=Pocket Guitar — your guitar tabs and practice
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pocket-guitar
+Group=pocket-guitar
+ExecStart=/usr/local/bin/pocket-guitar
+Environment=DATA_DIR=/var/lib/pocket-guitar
+Environment=PORT=8080
+Environment=BASE_URL=https://guitar.example.com
+Environment=SECURE_COOKIES=true
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pocket-guitar
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
