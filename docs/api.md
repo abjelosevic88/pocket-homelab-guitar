@@ -11,6 +11,7 @@ Everything is per person: another person's ids answer 404.
 | `GET /tabs?q=&status=&favorite=1&tag=&tuning=&artist=&source=&sort=recent\|added\|title\|artist\|practice&limit=&offset=` | `{tabs, total}` |
 | `GET /tabs/facets` | Tags, tunings, artists with counts, per-status counts |
 | `POST /tabs` (multipart, one or more `file` fields; optional `status`, `tags`) | `{added[], existing[], errors[]}`; a file you already have (same bytes) is returned under `existing` |
+| `GET /songsterr/search?q=` | Search Songsterr: `{ok, results:[{id, title, artist, url, guitars, bass, drums, tuning, difficulty, tab_id}]}`; `tab_id` = the song in your library already |
 | `POST /tabs/songsterr` `{url}` | Fetch a Songsterr tab through the converter (`TAB_CONVERTER_URL`) → `{tab, existing}` |
 | `GET /tabs/{id}` | The tab with its `sections` |
 | `GET /tabs/{id}/file` | The original file |

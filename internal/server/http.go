@@ -62,6 +62,7 @@ func (s *Server) Router() http.Handler {
 			r.Post("/tabs", s.handleUploadTabs)
 			r.Get("/tabs/facets", s.handleFacets)
 			r.Post("/tabs/songsterr", s.handleSongsterr)
+			r.Get("/songsterr/search", s.handleSongsterrSearch)
 			r.Get("/tabs/{id}", s.handleGetTab)
 			r.Put("/tabs/{id}", s.handleUpdateTab)
 			r.Delete("/tabs/{id}", s.handleDeleteTab)

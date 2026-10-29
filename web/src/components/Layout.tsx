@@ -48,7 +48,7 @@ export const openCreate = (k: CreateKind) => window.dispatchEvent(new CustomEven
 export function createItems(onCreate: (k: CreateKind) => void, songsterr: boolean): MenuItem[] {
   return [
     { label: 'Upload tab files…', icon: 'upload', hint: 'N', onSelect: () => onCreate('add') },
-    { label: 'From Songsterr…', icon: 'download', disabled: !songsterr, onSelect: () => onCreate('songsterr') },
+    { label: 'Search Songsterr…', icon: 'search', disabled: !songsterr, onSelect: () => onCreate('songsterr') },
     { label: 'From a Pocket Files folder…', icon: 'folder', onSelect: () => onCreate('folder') },
     'sep',
     { label: 'Log practice', icon: 'clock', hint: 'L', onSelect: () => onCreate('practice') },
@@ -166,7 +166,7 @@ export default function Layout() {
   const songsterr = !!settings?.songsterr_available
   const commands: PaletteCommand[] = [
     { id: 'add', label: 'Upload tab files', icon: 'upload', hint: 'N', keywords: 'add import gp guitar pro musicxml', run: () => create('add') },
-    ...(songsterr ? [{ id: 'songsterr', label: 'Add a tab from Songsterr', icon: 'download', keywords: 'songsterr url download', run: () => create('songsterr') }] : []),
+    ...(songsterr ? [{ id: 'songsterr', label: 'Search Songsterr for a tab', icon: 'search', keywords: 'songsterr url download find online', run: () => create('songsterr') }] : []),
     { id: 'log', label: 'Log practice', icon: 'clock', hint: 'L', keywords: 'practice time add manual', run: () => create('practice') },
     { id: 'home', label: 'Home', icon: 'home', hint: 'H', run: () => navigate('/') },
     { id: 'library', label: 'Library', icon: 'book-open', hint: 'B', keywords: 'songs tabs', run: () => navigate('/library') },
