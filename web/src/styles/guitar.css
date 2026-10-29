@@ -297,3 +297,5 @@ span.block { display: block; }
 .lib-toolbar .sel { width: 170px; flex: none; }
 .lib-selects .sel { width: 170px; }
 @media (max-width: 767px) { .lib-toolbar .sel { width: auto; flex: 1 1 120px; } .lib-selects { width: 100%; } .lib-selects .sel { flex: 1; width: auto; } }
+/* links that look like cards, rows and tiles: no underline on hover (the hover is the background/border) */
+.tab-card-main, .tab-row-main, .song-tile, .home-list-row, .setlist-card, .setlist-song, .tool-btn, .sb-quick-btn, .gt-sb-l { text-decoration: none !important; }
