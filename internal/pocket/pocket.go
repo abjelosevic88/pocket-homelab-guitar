@@ -35,8 +35,20 @@ func (c *Client) Configured() bool { return c != nil && c.BaseURL != "" && c.Tok
 var ErrNotFound = errors.New("not found")
 
 func (c *Client) do(ctx context.Context, method, path string, q url.Values, body any, v any) error {
+	_, err := c.call(ctx, method, path, q, body, v, false)
+	return err
+}
+
+// Call is one JSON request. A 409 Conflict is an answer, not a failure: its
+// body (what is in the way) is decoded into v and the status returned with a
+// nil error. Every other status of 300 and up is an error.
+func (c *Client) Call(ctx context.Context, method, path string, q url.Values, body any, v any) (int, error) {
+	return c.call(ctx, method, path, q, body, v, true)
+}
+
+func (c *Client) call(ctx context.Context, method, path string, q url.Values, body any, v any, conflictOK bool) (int, error) {
 	if !c.Configured() {
-		return errors.New("not configured")
+		return 0, errors.New("not configured")
 	}
 	u := c.BaseURL + path
 	if len(q) > 0 {
@@ -46,13 +58,13 @@ func (c *Client) do(ctx context.Context, method, path string, q url.Values, body
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		rd = bytes.NewReader(b)
 	}
 	req, err := http.NewRequestWithContext(ctx, method, u, rd)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.Token)
 	req.Header.Set("Accept", "application/json")
@@ -61,30 +73,30 @@ func (c *Client) do(ctx context.Context, method, path string, q url.Values, body
 	}
 	res, err := c.HTTP.Do(req)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusUnauthorized {
-		return errors.New("token rejected (401)")
+		return res.StatusCode, errors.New("token rejected (401)")
 	}
 	if res.StatusCode == http.StatusNotFound {
-		return ErrNotFound
+		return res.StatusCode, ErrNotFound
 	}
-	if res.StatusCode >= 300 {
+	if res.StatusCode >= 300 && (res.StatusCode != http.StatusConflict || !conflictOK) {
 		var e struct {
 			Error string `json:"error"`
 		}
 		b, _ := io.ReadAll(io.LimitReader(res.Body, 2000))
 		_ = json.Unmarshal(b, &e)
 		if e.Error != "" {
-			return fmt.Errorf("HTTP %d: %s", res.StatusCode, e.Error)
+			return res.StatusCode, fmt.Errorf("HTTP %d: %s", res.StatusCode, e.Error)
 		}
-		return fmt.Errorf("HTTP %d", res.StatusCode)
+		return res.StatusCode, fmt.Errorf("HTTP %d", res.StatusCode)
 	}
 	if v == nil || res.StatusCode == http.StatusNoContent {
-		return nil
+		return res.StatusCode, nil
 	}
-	return json.NewDecoder(res.Body).Decode(v)
+	return res.StatusCode, json.NewDecoder(res.Body).Decode(v)
 }
 
 // Health is the connection test for any Pocket app: /healthz plus a token check.

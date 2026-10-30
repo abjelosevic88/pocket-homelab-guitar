@@ -18,7 +18,7 @@ const TABS: { id: TabId; label: string; icon: string; sub: string }[] = [
   { id: 'player', label: 'Player', icon: 'sliders', sub: 'How songs look and play when you open them, and the speed trainer.' },
   { id: 'folders', label: 'Tab folders', icon: 'folder', sub: 'Folders in Pocket Files whose tabs appear in your library, and where new tabs are saved.' },
   { id: 'reminders', label: 'Reminders', icon: 'bell', sub: 'A nudge at the times you choose, your streak in the evening and the weekly report.' },
-  { id: 'apps', label: 'Connected apps', icon: 'layers', sub: 'Pocket Files (your tab folders), Pocket Habits (a day’s practice ticks a habit) and the original recordings from Navidrome.' },
+  { id: 'apps', label: 'Connected apps', icon: 'layers', sub: 'Pocket Files (your tab folders), Pocket Habits (a day’s practice ticks a habit), Pocket Time (one practice timer everywhere) and the original recordings from Navidrome.' },
   { id: 'ai', label: 'AI', icon: 'sparkles', sub: 'Who writes practice plans and answers questions: Pocket AI through Core, or your own OpenAI key.' },
   { id: 'profile', label: 'Profile', icon: 'user', sub: 'Your name, email and password.' },
   { id: 'people', label: 'People', icon: 'users', sub: 'Everyone who has an account on this box.' },
@@ -374,6 +374,17 @@ function Integrations() {
           {rules && rules.length > 0 && <p className="muted small">Checked right after you practise and every five minutes for the last week.</p>}
         </div>}
       </Section>
+      <Section title="Pocket Time — one practice timer" icon="timer" actions={connBadge(eff(f.time_mode), f.time_via)}
+        sub="Your practice timer is the same timer as in Pocket Time: start it on a song here, open Pocket Time and it is running there; stop it in either place and both stop. One timer at a time — starting another offers to stop the one running. When it stops, Pocket Time saves the practice to your log here (for that, also allow Pocket Time to log guitar practice in Pocket Core). Playback, loops and the metronome are not affected.">
+        <Connection app="Pocket Time" mode={f.time_mode} via={f.time_via} detail={f.time_detail} core={coreOn} hasToken={!!f.time_token}
+          onMode={m => save({ time_mode: m })} onDisconnect={() => save({ time_url: '', time_token: '' })}
+          test={<><button type="button" className="btn sm" onClick={() => run('time', f.time_url, f.time_token)}>Test connection</button>{status('time')}</>}
+          direct={<div className="two-col tight">
+            <Field label="URL" help="Inside Docker use http://host.docker.internal:PORT or the service name."><input value={f.time_url} onChange={e => setF({ ...f, time_url: e.target.value })} placeholder="http://host.docker.internal:8219" /></Field>
+            <Field label="API token" help="Pocket Time → Settings → API tokens"><input value={f.time_token} onChange={e => setF({ ...f, time_token: e.target.value })} autoComplete="off" /></Field>
+          </div>} />
+        {eff(f.time_mode) === 'off' && <p className="muted small">Off: the player logs the time you play a song by itself, and the timer under Tools saves free practice, as before.</p>}
+      </Section>
       <Section title="The original recording — Navidrome" icon="headphones" actions={musicMode === 'off' ? <span className="badge">off</span> : <span className="badge ok">{musicMode === 'core' ? 'Pocket Core' : 'direct'}</span>}
         sub="Link a song to its recording in your own Navidrome and play along with the record at your practice speed, with the tab cursor following. Guitar streams it through itself, so the password never reaches the browser.">
         <div className="conn-block">
@@ -391,7 +402,7 @@ function Integrations() {
           {musicMode !== 'off' && <div className="row wrap"><button type="button" className="btn sm" onClick={() => musicMode === 'direct' ? run('music', f.music_url, f.music_password, { user: f.music_user }) : run('music', '', '')}>Test connection</button>{status('music')}</div>}
         </div>
       </Section>
-      <Section title="Other Pocket apps" icon="layers" sub="Guitar offers your practice to the rest of the box through Pocket Core: Pocket Day writes it into your journal, Pocket Calendar can show it on the calendar, and a lesson app could log practice here. Your song notes never leave this app.">
+      <Section title="Other Pocket apps" icon="layers" sub="Guitar offers your practice to the rest of the box through Pocket Core: Pocket Day writes it into your journal, Pocket Calendar can show it on the calendar, Pocket Time shows it with the rest of your tracked time (and saves what its timer tracked for a song here), and a lesson app could log practice here. Your song notes never leave this app.">
         <dl className="set-dl">
           <div><dt>guitar:read</dt><dd className="muted">Songs and where you are with them, practice time, streaks and setlists — without your notes.</dd></div>
           <div><dt>guitar:write</dt><dd className="muted">Log practice done elsewhere; only what that app logged itself can be changed by it.</dd></div>

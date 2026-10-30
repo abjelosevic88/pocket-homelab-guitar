@@ -223,3 +223,11 @@ form.pp-row input { flex: 1; min-width: 0; }
 }
 .fb-inner { width: 100%; }
 .tp-sheet-today { display: flex; align-items: center; gap: 6px; }
+
+/* the shared practice timer (Pocket Time) in the player header */
+.ph-timer { gap: 6px; min-width: 0; }
+.ph-timer.on { background: var(--accent-soft); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+.ph-timer.other { color: var(--muted); }
+.st-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; }
+.st-busy p { margin: 0; }
+.st-pop .st-busy { padding: 14px 16px; gap: 10px; }

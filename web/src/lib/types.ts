@@ -30,6 +30,8 @@ export interface Settings {
   files_url: string; files_token: string; files_public_url: string
   habits_mode: ConnMode; habits_via: ConnVia; habits_detail: string; habits_open_url: string; habits_configured: boolean
   habits_url: string; habits_token: string; habits_public_url: string
+  time_mode: ConnMode; time_via: ConnVia; time_detail: string; time_open_url: string; time_configured: boolean
+  time_url: string; time_token: string; time_public_url: string
   music_mode: ConnMode; music_url: string; music_user: string; music_password: string
 
   ai_provider: 'auto' | 'pocket' | 'openai'; ai_pocket_model: string; openai_api_key: string; openai_model: string; openai_base_url: string

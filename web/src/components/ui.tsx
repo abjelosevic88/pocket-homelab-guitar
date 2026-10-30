@@ -5,7 +5,7 @@ import { Icon } from './icons'
 // ---------- toasts (with an optional action, e.g. Undo) ----------
 
 type ToastItem = { id: number; msg: React.ReactNode; kind: 'ok' | 'err'; action?: { label: string; run: () => void } }
-type ToastFn = (msg: React.ReactNode, kind?: 'ok' | 'err', action?: { label: string; run: () => void }) => void
+export type ToastFn = (msg: React.ReactNode, kind?: 'ok' | 'err', action?: { label: string; run: () => void }) => void
 const ToastCtx = createContext<{ toast: ToastFn }>({ toast: () => {} })
 export function useToast() { return useContext(ToastCtx) }
 export function ToastProvider({ children }: { children: React.ReactNode }) {

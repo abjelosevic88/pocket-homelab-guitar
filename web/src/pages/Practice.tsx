@@ -196,7 +196,7 @@ export default function Practice() {
                     <span className={`gt-session-ico ${s.kind === 'free' ? 'free' : ''}`}><Icon name={s.kind === 'free' ? 'timer' : 'music'} size={16} /></span>
                     <div className="gt-session-main">
                       <div className="gt-session-t ellipsis">{s.tab_id ? <Link to={`/tab/${s.tab_id}`}>{s.title || 'Untitled'}</Link> : <span>{s.title || 'Practice'}</span>}</div>
-                      <div className="muted small tnum">{[minutes(s.duration_s), s.speed ? `up to ${s.speed}%` : '', s.loops ? `${s.loops} ${s.loops === 1 ? 'loop' : 'loops'}` : '', fmtISOTime(s.started_at), s.source !== 'app' && s.source !== 'manual' ? `from ${s.source}` : ''].filter(Boolean).join(' · ')}</div>
+                      <div className="muted small tnum">{[minutes(s.duration_s), s.speed ? `up to ${s.speed}%` : '', s.loops ? `${s.loops} ${s.loops === 1 ? 'loop' : 'loops'}` : '', fmtISOTime(s.started_at), s.external_id?.startsWith('time:') ? 'practice timer' : s.source !== 'app' && s.source !== 'manual' ? `from ${s.source}` : ''].filter(Boolean).join(' · ')}</div>
                       {s.note && <div className="gt-session-note">{s.note}</div>}
                     </div>
                     <MenuButton label="More" className="btn ghost icon-only sm" align="right" width={180} items={[

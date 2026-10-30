@@ -76,4 +76,4 @@ func (s *Server) reportModesSoon() {
 
 // modeKeys are the settings that can change a person's effective mode: the
 // mode itself, and the token (a saved token makes the default direct).
-var modeKeys = []string{"files_mode", "files_token", "habits_mode", "habits_token", "music_mode", "music_password"}
+var modeKeys = []string{"files_mode", "files_token", "habits_mode", "habits_token", "time_mode", "time_token", "music_mode", "music_password"}

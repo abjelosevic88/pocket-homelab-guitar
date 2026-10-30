@@ -44,6 +44,11 @@ type Server struct {
 	coreErr  string
 	resolved map[string]resolvedURL
 	modesMu  sync.Mutex // one connection-mode report at a time
+
+	timerMu sync.Mutex
+	timers  map[int64]seenTimer // each person's Pocket Time timer as last seen
+
+	startedHere map[int64]int64 // the timer each person last started from Guitar
 }
 
 type resolvedURL struct {
@@ -55,7 +60,7 @@ type resolvedURL struct {
 func New(cfg *config.Config, st *store.Store, log *slog.Logger, webFS fs.FS) *Server {
 	return &Server{cfg: cfg, store: st, log: log, webFS: webFS, started: time.Now(), oidc: &oidcProvider{},
 		core:     core.New(cfg.CoreURL, core.Options{DB: st.DB, TokenFile: cfg.DataDir + "/core.token", UserAgent: cfg.UserAgent}),
-		resolved: map[string]resolvedURL{}}
+		resolved: map[string]resolvedURL{}, timers: map[int64]seenTimer{}, startedHere: map[int64]int64{}}
 }
 
 // Bootstrap seeds the first admin (if configured), the owner's integration

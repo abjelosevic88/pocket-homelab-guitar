@@ -14,7 +14,7 @@ import (
 	"github.com/abjelosevic88/pocket-homelab-guitar/internal/store"
 )
 
-// ---- Pocket Files and Pocket Habits ----
+// ---- Pocket Files, Pocket Habits and Pocket Time ----
 //
 // Each person chooses how Guitar reaches them: through a Pocket Core app link
 // (Guitar asks Core for a five-minute token acting as that person, nothing
@@ -27,6 +27,8 @@ const (
 	scopeEntriesWrite = "entries:write"
 	scopeFilesRead    = "files:read"
 	scopeFilesWrite   = "files:write"
+	scopeTimeRead     = "time:read"
+	scopeTimeWrite    = "time:write"
 )
 
 // pocketApp is one sibling Pocket app Guitar acts in.
@@ -39,7 +41,8 @@ type pocketApp struct {
 var (
 	appFiles   = pocketApp{"files", "Pocket Files", []string{scopeFilesRead, scopeFilesWrite}, "Your tab folders: tabs in a folder you pick appear in the library, and new tabs can be saved there"}
 	appHabits  = pocketApp{"habits", "Pocket Habits", []string{scopeHabitsRead, scopeEntriesWrite}, "A day of guitar practice ticks a habit (\"Practise guitar\")"}
-	pocketApps = []pocketApp{appFiles, appHabits}
+	appTime    = pocketApp{"time", "Pocket Time", []string{scopeTimeRead, scopeTimeWrite}, "Your practice timer is the same timer as in Pocket Time"}
+	pocketApps = []pocketApp{appFiles, appHabits, appTime}
 )
 
 func appBySlug(slug string) (pocketApp, bool) {
@@ -124,6 +127,8 @@ func connSettings(st store.Settings, a pocketApp) (mode, url, token, public stri
 		return st.HabitsMode, st.HabitsURL, st.HabitsToken, st.HabitsPublicURL
 	case "files":
 		return st.FilesMode, st.FilesURL, st.FilesToken, st.FilesPublicURL
+	case "time":
+		return st.TimeMode, st.TimeURL, st.TimeToken, st.TimePublicURL
 	}
 	return "", "", "", ""
 }

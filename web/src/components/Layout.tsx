@@ -13,6 +13,7 @@ import { AddTabsModal, type AddMode } from './AddTabs'
 import { SetlistModal } from '../pages/Setlists'
 import { Avatar, type Anchor, type MenuItem, Menu, MenuButton, modalOpen, rectOf, useIsMobile, useMediaQuery } from './ui'
 import { AskButton } from './AskButton'
+import { TopbarTimer } from './SharedTimer'
 
 const SIDEBAR_KEY = 'pgt-sidebar'
 
@@ -236,6 +237,7 @@ function TopBar({ onMenu, onPalette, mobile, compact, sidebarOpen, crumb }: { on
         {crumb ? <><button type="button" className="crumb" onClick={() => navigate(sectionTo)}>{section}</button><Icon name="chevron-right" size={16} className="crumb-sep" /><span className="ellipsis">{crumb}</span></> : section}
       </h1>
       <span className="spacer" />
+      <TopbarTimer />
       <button type="button" className="btn ghost icon-only" onClick={onPalette} aria-label="Search" title="Search (⌘K or /)"><Icon name="search" size={18} /></button>
       <AskButton />
       <MenuButton label="Account" className="avatar-btn" align="right" width={220} items={avatarMenu}>

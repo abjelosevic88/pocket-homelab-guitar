@@ -54,6 +54,7 @@ func (s *Server) publicSettings(ctx context.Context, u *store.User, st store.Set
 		"notify_url": st.NotifyURL, "notify_format": st.NotifyFormat, "notify_configured": st.NotifyURL != "",
 		"files_url": st.FilesURL, "files_token": mask(st.FilesToken), "files_public_url": st.FilesPublicURL,
 		"habits_url": st.HabitsURL, "habits_token": mask(st.HabitsToken), "habits_public_url": st.HabitsPublicURL,
+		"time_url": st.TimeURL, "time_token": mask(st.TimeToken), "time_public_url": st.TimePublicURL,
 		"music_url": st.MusicURL, "music_user": st.MusicUser, "music_password": mask(st.MusicPassword),
 		"music_mode":  s.connMode(st.MusicMode, st.MusicPassword),
 		"ai_provider": st.AIProvider, "ai_pocket_model": st.AIPocketModel, "openai_api_key": mask(st.OpenAIKey), "openai_model": st.OpenAIModel, "openai_base_url": st.OpenAIBaseURL,
@@ -229,6 +230,9 @@ func (s *Server) handlePutSettings(w http.ResponseWriter, r *http.Request) {
 	url("files_url", &cur.FilesURL, in.FilesURL)
 	secret("files_token", &cur.FilesToken, in.FilesToken)
 	url("files_public_url", &cur.FilesPublicURL, in.FilesPublicURL)
+	url("time_url", &cur.TimeURL, in.TimeURL)
+	secret("time_token", &cur.TimeToken, in.TimeToken)
+	url("time_public_url", &cur.TimePublicURL, in.TimePublicURL)
 	url("music_url", &cur.MusicURL, in.MusicURL)
 	text("music_user", &cur.MusicUser, in.MusicUser)
 	secret("music_password", &cur.MusicPassword, in.MusicPassword)
@@ -257,6 +261,7 @@ func (s *Server) handlePutSettings(w http.ResponseWriter, r *http.Request) {
 	mode("habits_mode", &cur.HabitsMode, in.HabitsMode)
 	mode("files_mode", &cur.FilesMode, in.FilesMode)
 	mode("music_mode", &cur.MusicMode, in.MusicMode)
+	mode("time_mode", &cur.TimeMode, in.TimeMode)
 	if err := s.store.SaveUserSettings(r.Context(), me.ID, cur); err != nil {
 		s.fail(w, err, "save settings")
 		return
@@ -272,6 +277,9 @@ func (s *Server) handlePutSettings(w http.ResponseWriter, r *http.Request) {
 			s.reportModesSoon()
 			break
 		}
+	}
+	if keys["time_mode"] || keys["time_url"] || keys["time_token"] {
+		s.forgetTimer(me.ID)
 	}
 	writeJSON(w, http.StatusOK, s.publicSettings(r.Context(), me, cur))
 }
@@ -337,6 +345,15 @@ func (s *Server) handleIntegrationTest(w http.ResponseWriter, r *http.Request) {
 					var sp []pocket.Space
 					sp, err = conn.client.Spaces(ctx)
 					msg = fmt.Sprintf("Pocket Files %s, %s, %d places", v, how, len(sp))
+				case "time":
+					var tr timeTimer
+					if _, err = conn.client.Call(ctx, http.MethodGet, "/api/v1/timer", nil, nil, &tr); err == nil {
+						now := "no timer running"
+						if tr.Running != nil {
+							now = "your timer is running: " + tr.Running.name()
+						}
+						msg = fmt.Sprintf("Pocket Time %s, %s, %s", v, how, now)
+					}
 				}
 			}
 		}

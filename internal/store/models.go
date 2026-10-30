@@ -239,6 +239,12 @@ type Settings struct {
 	HabitsToken     string `json:"habits_token"`
 	HabitsPublicURL string `json:"habits_public_url"`
 
+	// Pocket Time: the practice timer is the person's one timer there.
+	TimeMode      string `json:"time_mode"`
+	TimeURL       string `json:"time_url"`
+	TimeToken     string `json:"time_token"`
+	TimePublicURL string `json:"time_public_url"`
+
 	// Navidrome, for playing along with the original recording.
 	MusicMode     string `json:"music_mode"`
 	MusicURL      string `json:"music_url"`

@@ -116,6 +116,11 @@ func (s *Server) Router() http.Handler {
 			r.Post("/ai/ask", s.handleAsk)
 
 			r.Post("/integrations/test", s.handleIntegrationTest)
+
+			// the shared practice timer (Pocket Time), for this app's own pages
+			r.Get("/timer", s.handleGetTimer)
+			r.Post("/timer/start", s.handleStartTimer)
+			r.Post("/timer/stop", s.handleStopTimer)
 			r.Post("/notify/test", s.handleNotifyTest)
 			r.Post("/notify/weekly", s.handleWeeklyNow)
 

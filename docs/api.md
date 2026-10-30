@@ -51,6 +51,9 @@ Everything is per person: another person's ids answer 404.
 | :--- | :--- |
 | `GET /rules` · `POST /rules` `{min_minutes, habit_id, habit_name}` · `PUT /rules/{id}` · `DELETE /rules/{id}` | "A day with N minutes of guitar ticks this habit" (Pocket Habits) |
 | `GET /habits/list` | Your habits in Pocket Habits, for the picker |
+| `GET /timer` | Your practice timer in Pocket Time → `{connected, running: {id, name, started_at, elapsed_s, app, started_in, guitar, tab_id, url} \| null, time_url}`; `connected: false` with a `detail` when Pocket Time is not set up |
+| `POST /timer/start` `{tab_id}` or `{title}`, `switch?` | Start the shared timer for a song or free practice; `409 {error, running}` when another timer runs, `switch: true` stops it and starts this. Pocket Time saves the practice here when it stops (`external_id` `time:<id>`) |
+| `POST /timer/stop` `{only_if, note?}` | Stop it (only if `only_if` is still the one running, else `409`) |
 | `GET /music/search?q=` | Songs in your Navidrome (for the original recording) |
 | `GET /music/stream/{id}` | One song, streamed through the app (ranges work) |
 | `POST /ai/plan` `{tab_id, section_id?}` | A short practice plan for the song from your AI → `{text}` |

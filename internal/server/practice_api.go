@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -110,6 +111,12 @@ func (s *Server) handleCreatePractice(w http.ResponseWriter, r *http.Request) {
 	}
 	if m := s.checkPractice(ctx, uid, &in, &p); m != "" {
 		writeErr(w, http.StatusBadRequest, m)
+		return
+	}
+	// The player's automatic log while the practice timer runs: the timer is
+	// the record (Pocket Time writes it back here when it stops), see timer.go.
+	if p.Source == "app" && p.Kind == "tab" && !strings.HasPrefix(p.ExternalID, "time:") && s.holdAutoPractice(uid, p.StartedAt) {
+		writeJSON(w, http.StatusOK, map[string]any{"held": true, "reason": "your practice timer is running; its time is saved when it stops"})
 		return
 	}
 	fresh := true

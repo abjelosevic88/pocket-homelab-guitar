@@ -20,6 +20,8 @@ import { RecordingPanel } from '../player/RecordingPanel'
 import { usePracticeTimer, useWakeLock } from '../player/practice'
 import { useRecordingSync, type SoundMode } from '../player/recording'
 import { PIcon } from '../player/icons'
+import { PlayerTimerButton } from '../components/SharedTimer'
+import { elapsedNow, useSharedTimer } from '../lib/timer'
 
 type PanelKind = 'sections' | 'song' | 'recording'
 const PANEL_KEY = 'pgt-player-panel'
@@ -288,7 +290,11 @@ function Player({ tabId }: { tabId: number }) {
 
   // ---- practice, wake lock, recording ----
   const title = tab ? [tab.artist, tab.title].filter(Boolean).join(' – ') : ''
-  const timer = usePracticeTimer(engine, tab ? tab.id : null, title, activeId)
+  // the shared timer (Pocket Time): while it runs for guitar practice the
+  // automatic log counts nothing, the timer's time comes back from Pocket Time
+  const shared = useSharedTimer()
+  const timer = usePracticeTimer(engine, tab ? tab.id : null, title, activeId, !!shared.running?.guitar, shared.running?.started_at || '')
+  const timerHereS = shared.running?.guitar && tab && shared.running.tab_id === tab.id ? Math.round(elapsedNow(shared)) : 0
   useWakeLock(st.playing && (s?.keep_awake ?? true))
   useRecordingSync(engine, tab?.recording ?? null, tab?.recording ? sound : 'tab')
   useEffect(() => { if (tab) document.title = `${tab.title || 'Tab'} · ${settings?.title || 'Pocket Guitar'}` }, [tab?.title]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -340,7 +346,7 @@ function Player({ tabId }: { tabId: number }) {
     panel === 'sections' ? <SectionsPanel tab={tab} sections={sections} setSections={setSections} st={st} activeId={activeId} onActivate={activate}
       onSelectBars={(a, b) => { engine.selectBars(a, b); engine.setLooping(true) }} onClear={() => engine.clearSelection()}
       trainer={trainer} setTrainer={setTrainer} passes={passes} aiPlan={aiPlan} aiReady={aiReady} />
-      : panel === 'song' ? <SongPanel tab={tab} patch={patch} onPrint={() => engine.print()} todayS={timer.todayS} sessionS={timer.sessionS} fileNotes={st.fileNotes} />
+      : panel === 'song' ? <SongPanel tab={tab} patch={patch} onPrint={() => engine.print()} todayS={timer.todayS + timerHereS} sessionS={timer.sessionS + timerHereS} fileNotes={st.fileNotes} />
         : <RecordingPanel tab={tab} setRecording={setRecording} mode={sound} setMode={setSound} />
   )
   const panelTitle = panel === 'sections' ? 'Sections and loops' : panel === 'song' ? 'The song' : 'Original recording'
@@ -375,6 +381,7 @@ function Player({ tabId }: { tabId: number }) {
           </div>
         )}
         <span className="spacer" />
+        {tab && <PlayerTimerButton tabId={tab.id} label={tab.title} beforeStart={timer.flush} />}
         <button type="button" className={`btn ghost icon-only ph-fav ${tab?.favorite ? 'on' : ''}`} disabled={!tab} onClick={() => tab && patch({ favorite: !tab.favorite })} aria-pressed={!!tab?.favorite} aria-label="Favourite" title={tab?.favorite ? 'In your favourites' : 'Add to favourites'}><Icon name="star" size={18} /></button>
         <div className="ph-tabs" role="group" aria-label="Panels">
           {panelBtn('sections', 'bars', 'Sections', 'Sections, loops and the speed trainer')}
@@ -412,7 +419,7 @@ function Player({ tabId }: { tabId: number }) {
       <div className="tp-wrap">
         {!st.playerReady && st.score && st.phase !== 'error' && <div className="tp-soundload small muted" aria-live="polite">Loading the instrument sounds… <span className="tnum">{Math.round(st.soundLoad * 100)}%</span></div>}
         <Transport engine={engine} st={st} speedStep={s?.speed_step || 5} tracks={shown} setTracks={setTracks} view={view} setView={setView}
-          todayS={timer.todayS} onLoop={toggleLoop} hasRecording={!!tab?.recording} soundLabel={sound === 'recording' ? 'the record only' : sound === 'both' ? 'with the record' : 'tab sound'} />
+          todayS={timer.todayS + timerHereS} onLoop={toggleLoop} hasRecording={!!tab?.recording} soundLabel={sound === 'recording' ? 'the record only' : sound === 'both' ? 'with the record' : 'tab sound'} />
       </div>
 
       {mobile && panel && sheetAt && (
