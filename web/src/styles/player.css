@@ -48,7 +48,7 @@
 .pp-filenotes b { color: var(--accent-ink); flex: none; min-width: 26px; }
 .score .at-selection div { background: color-mix(in srgb, var(--accent) 18%, transparent); }
 .score .at-highlight * { fill: var(--accent); stroke: var(--accent); }
-.player.paper .score .at-highlight * { fill: #b8231f; stroke: #b8231f; }
+.player.paper .score .at-highlight * { fill: #4338ca; stroke: #4338ca; }
 
 /* ---- side panel (desktop) / sheet (phones) ---- */
 .player-panel { width: 340px; flex: none; border-left: 1px solid var(--border); background: var(--bg); display: flex; flex-direction: column; min-height: 0; }
