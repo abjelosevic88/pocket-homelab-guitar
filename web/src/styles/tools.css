@@ -144,7 +144,7 @@
 .gt-songbars { display: grid; gap: 9px; }
 .gt-sb { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto; align-items: center; gap: 10px; }
 .gt-sb-l { display: flex; flex-direction: column; min-width: 0; color: inherit; line-height: 1.25; }
-a.gt-sb-l:hover .gt-sb-t { color: var(--accent-ink); text-decoration: underline; }
+a.gt-sb-l:hover .gt-sb-t { color: var(--accent-ink); }
 .gt-sb-t { font-weight: 600; font-size: 13.5px; }
 .gt-sb-a { font-size: 12px; color: var(--muted); }
 .gt-sb-track { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
@@ -171,7 +171,7 @@ a.gt-sb-l:hover .gt-sb-t { color: var(--accent-ink); text-decoration: underline;
 .gt-session-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .gt-session-t { font-weight: 600; }
 .gt-session-t a { color: inherit; }
-.gt-session-t a:hover { color: var(--accent-ink); text-decoration: underline; }
+.gt-session-t a:hover { color: var(--accent-ink); }
 .gt-session-note { font-size: 13px; color: var(--text-2); margin-top: 3px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .gt-more { display: flex; justify-content: center; padding: 12px 18px 8px; }
 .gt-practice .card-head .chip { flex-shrink: 0; }
