@@ -1,7 +1,22 @@
 // Small SVG charts, no dependencies: a line/area chart with a hover readout,
 // a bar chart, a sparkline, a progress ring, a stacked bar, a year heatmap,
 // horizontal bars and a scatter.
-import { useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+
+/** The element's rendered width, so SVGs draw at 1:1 instead of stretching text and bars. */
+function useWidth(ref: React.RefObject<HTMLElement | null>, fallback: number): number {
+  const [w, setW] = useState(fallback)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const set = () => { const cw = Math.round(el.clientWidth); if (cw > 0) setW(cw) }
+    set()
+    const ro = new ResizeObserver(set)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [ref])
+  return w
+}
 import { fmtDate } from '../lib/format'
 
 export type Pt = { x: string; y: number | null; y2?: number | null }
@@ -29,7 +44,7 @@ export function LineChart({ points, height = 180, color = 'var(--accent)', kind 
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [hover, setHover] = useState<number | null>(null)
-  const W = 600, H = height, L = 40, R = 10, T = 12, B = 24
+  const W = useWidth(ref, 600), H = height, L = 40, R = 10, T = 12, B = 24
   const vals = points.map(p => p.y).filter((v): v is number => v !== null && !Number.isNaN(v))
   const extra = [goal ?? NaN, band?.[0] ?? NaN, band?.[1] ?? NaN].filter(v => !Number.isNaN(v))
   const [lo, hi] = extent([...vals, ...extra, ...(points.map(p => p.y2).filter((v): v is number => v !== null && v !== undefined))], 0.12, zero || kind === 'bar')
@@ -44,7 +59,7 @@ export function LineChart({ points, height = 180, color = 'var(--accent)', kind 
       open = true
     })
     return d
-  }, [points, lo, hi]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [points, lo, hi, W]) // eslint-disable-line react-hooks/exhaustive-deps
   const path2 = useMemo(() => {
     let d = '', open = false
     points.forEach((p, i) => {
@@ -53,7 +68,7 @@ export function LineChart({ points, height = 180, color = 'var(--accent)', kind 
       open = true
     })
     return d
-  }, [points, lo, hi]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [points, lo, hi, W]) // eslint-disable-line react-hooks/exhaustive-deps
   const ticks = useMemo(() => {
     const raw = (hi - lo) / 4
     const mag = Math.pow(10, Math.floor(Math.log10(raw || 1)))
@@ -63,7 +78,7 @@ export function LineChart({ points, height = 180, color = 'var(--accent)', kind 
     for (let t = Math.ceil(lo / step) * step; t <= hi + 1e-9 && out.length < 8; t += step) out.push(+t.toFixed(10))
     return out
   }, [lo, hi])
-  const labelEvery = Math.max(1, Math.ceil(n / 6))
+  const labelEvery = Math.max(1, Math.ceil(n / Math.max(2, Math.floor((W - L - R) / 90))))
   const onMove = (e: React.MouseEvent | React.TouchEvent) => {
     const el = ref.current
     if (!el || !n) return
@@ -77,7 +92,7 @@ export function LineChart({ points, height = 180, color = 'var(--accent)', kind 
   const barW = n > 0 ? Math.max(2, ((W - L - R) / n) * 0.7) : 4
   return (
     <div ref={ref} className={`chart ${className}`} onMouseMove={onMove} onMouseLeave={() => setHover(null)} onTouchStart={onMove} onTouchMove={onMove} onTouchEnd={() => setHover(null)}>
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ height }} role="img" aria-label="Chart">
+      <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} role="img" aria-label="Chart">
         {ticks.map((t, i) => <g key={i}><line className="grid" x1={L} x2={W - R} y1={y(t)} y2={y(t)} /><text className="tick" x={L - 6} y={y(t) + 4} textAnchor="end">{format(t)}</text></g>)}
         {band && <rect className="band" x={L} width={W - L - R} y={y(band[1])} height={Math.max(0, y(band[0]) - y(band[1]))} />}
         {goal !== undefined && <g><line className="goal" x1={L} x2={W - R} y1={y(goal)} y2={y(goal)} /><text className="goal-label" x={L + 4} y={y(goal) - 5} textAnchor="start">{goalLabel || `goal ${format(goal)}`}</text></g>}
@@ -87,7 +102,7 @@ export function LineChart({ points, height = 180, color = 'var(--accent)', kind 
         {kind !== 'bar' && path && <path className="line" d={path} stroke={color} />}
         {kind !== 'bar' && path2 && <path className="line line2" d={path2} stroke={color} />}
         {kind !== 'bar' && n <= 60 && points.map((p, i) => p.y === null || Number.isNaN(p.y) ? null : <circle key={i} className="dot" cx={x(i)} cy={y(p.y)} r={2.6} fill={color} />)}
-        {points.map((p, i) => i % labelEvery === 0 || i === n - 1 ? <text key={i} className="tick" x={x(i)} y={H - 6} textAnchor={i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}>{fmtDate(p.x, false)}</text> : null)}
+        {points.map((p, i) => (i % labelEvery === 0 && n - 1 - i >= labelEvery / 2) || i === n - 1 ? <text key={i} className="tick" x={x(i)} y={H - 6} textAnchor={i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}>{fmtDate(p.x, false)}</text> : null)}
         {hp && hover !== null && <g><line className="cursor" x1={x(hover)} x2={x(hover)} y1={T} y2={H - B} />{hp.y !== null && !Number.isNaN(hp.y) && <circle cx={x(hover)} cy={y(hp.y)} r={4.5} fill={color} className="dot-hi" />}</g>}
       </svg>
       {hp && <div className="chart-tip" style={{ left: `${((x(hover!) / W) * 100).toFixed(1)}%` }}><b>{hp.y === null || Number.isNaN(hp.y) ? '—' : format(hp.y)}{hp.y2 !== null && hp.y2 !== undefined ? ` / ${format(hp.y2)}` : ''}</b><span>{fmtDate(hp.x)}</span></div>}
@@ -206,15 +221,16 @@ export function HBars({ items, format = nice }: { items: { label: string; value:
 
 /** Dots of y against x (minutes practised vs a health number). */
 export function Scatter({ points, height = 160, color = 'var(--accent)', xLabel, yLabel }: { points: { x: number; y: number; label?: string }[]; height?: number; color?: string; xLabel?: string; yLabel?: string }) {
-  const W = 400, H = height, L = 36, R = 8, T = 8, B = 22
+  const ref = useRef<HTMLDivElement>(null)
+  const W = useWidth(ref, 400), H = height, L = 36, R = 8, T = 8, B = 22
   if (!points.length) return null
   const [x0, x1] = extent(points.map(p => p.x), 0.05, true)
   const [y0, y1] = extent(points.map(p => p.y), 0.1)
   const x = (v: number) => L + ((v - x0) / (x1 - x0)) * (W - L - R)
   const y = (v: number) => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B)
   return (
-    <div className="chart">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ height }} role="img" aria-label="Scatter">
+    <div ref={ref} className="chart">
+      <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} role="img" aria-label="Scatter">
         <line className="grid" x1={L} x2={W - R} y1={H - B} y2={H - B} />
         <text className="tick" x={L - 4} y={y(y1) + 8} textAnchor="end">{nice(y1)}</text>
         <text className="tick" x={L - 4} y={y(y0)} textAnchor="end">{nice(y0)}</text>
