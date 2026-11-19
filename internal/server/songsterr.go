@@ -41,7 +41,7 @@ func (s *Server) songsterrGet(ctx context.Context, u string, accept string, limi
 	if err != nil {
 		return nil, 0, err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; "+s.cfg.UserAgent+")")
+	req.Header.Set("User-Agent", s.songsterrUserAgent(ctx))
 	req.Header.Set("Accept", accept)
 	req.Header.Set("Referer", "https://www.songsterr.com/")
 	res, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
@@ -237,7 +237,7 @@ func (s *Server) handleSongsterrSearch(w http.ResponseWriter, r *http.Request) {
 		cctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 		defer cancel()
 		req, _ := http.NewRequestWithContext(cctx, http.MethodGet, "https://www.songsterr.com/api/songs?"+url.Values{"pattern": {q}, "size": {"30"}}.Encode(), nil)
-		req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; "+s.cfg.UserAgent+")")
+		req.Header.Set("User-Agent", s.songsterrUserAgent(cctx))
 		req.Header.Set("Accept", "application/json")
 		res, err := (&http.Client{Timeout: 20 * time.Second}).Do(req)
 		if err != nil {

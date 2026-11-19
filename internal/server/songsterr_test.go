@@ -2,9 +2,13 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"io"
 	"mime/multipart"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -60,4 +64,39 @@ func TestSongsterrUploadKeepsOrigin(t *testing.T) {
 	}
 	a.expect(400, a.alice, "GET", "/api/v1/songsterr/part?song=1&revision=2&image=../../etc&part=0", nil)
 	a.expect(400, a.alice, "GET", "/api/v1/songsterr/song?url=https://example.com/", nil)
+}
+
+func TestSongsterrChromeVersionCached(t *testing.T) {
+	a := newApp(t, nil)
+	old := chromeVersionURL
+	t.Cleanup(func() { chromeVersionURL = old })
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		calls++
+		_, _ = io.WriteString(w, `{"channels":{"Stable":{"version":"158.0.8127.36"}}}`)
+	}))
+	defer srv.Close()
+	chromeVersionURL = srv.URL
+	for i := 0; i < 3; i++ {
+		if ua := a.s.songsterrUserAgent(context.Background()); !strings.Contains(ua, "HeadlessChrome/158.0.8127.36") {
+			t.Fatalf("user agent = %q", ua)
+		}
+	}
+	if calls != 1 {
+		t.Fatalf("fetched %d times, want 1", calls)
+	}
+}
+
+func TestSongsterrChromeVersionFallback(t *testing.T) {
+	a := newApp(t, nil)
+	old := chromeVersionURL
+	t.Cleanup(func() { chromeVersionURL = old })
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+	chromeVersionURL = srv.URL
+	if ua := a.s.songsterrUserAgent(context.Background()); !strings.Contains(ua, "HeadlessChrome/"+chromeVersionFallback) {
+		t.Fatalf("user agent = %q", ua)
+	}
 }
