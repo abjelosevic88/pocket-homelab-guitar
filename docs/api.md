@@ -66,4 +66,6 @@ Everything is per person: another person's ids answer 404.
 `GET|POST /users`, `PUT|DELETE /users/{id}` (admins), `GET /backup` (admins), `GET /export.json`, `GET /export.csv`,
 `POST /import` (a Pocket Guitar export; tabs come back with their files).
 
+Pocket Move can copy your tabs and practice out and bring them in: `GET /pocket/portable` describes `GET /export.json`, `GET /export.csv` and `POST /import` under the link scopes `move:export` and `move:import`.
+
 `GET /healthz`, `GET /readyz`, `GET /metrics`.

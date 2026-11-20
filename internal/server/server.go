@@ -243,6 +243,7 @@ func (s *Server) registerWithCore(ctx context.Context) error {
 		URL: s.cfg.CoreAppURL, PublicURL: s.cfg.BaseURL, HealthPath: "/healthz", EnvPrefix: "GUITAR",
 		Publishes: eventTopics,
 		Offers:    linkOffers,
+		Portable:  portable,
 		Uses:      append(linkUses(), core.InferenceUse()),
 		Services:  []core.ServiceUse{{Type: "navidrome", Reason: "Play along with the original recording of a song from your own music"}},
 	}
