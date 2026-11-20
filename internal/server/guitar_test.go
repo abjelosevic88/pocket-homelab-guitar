@@ -274,7 +274,15 @@ func TestLinkScopes(t *testing.T) {
 func TestExportImportIsIdempotent(t *testing.T) {
 	a := newApp(t, nil)
 	_, res := a.upload(a.alice, map[string]string{"a.tex": tex("One", "Band"), "b.tex": tex("Two", "Band")})
-	id := int64(num(firstAdded(t, res), "id"))
+	var id int64 // the sections go on "One" (the files arrive in any order)
+	for _, x := range res["added"].([]any) {
+		if m := x.(map[string]any); m["title"] == "One" {
+			id = int64(num(m, "id"))
+		}
+	}
+	if id == 0 {
+		t.Fatalf("no One in %v", res)
+	}
 	a.ok(a.alice, "POST", fmt.Sprintf("/api/v1/tabs/%d/sections", id), map[string]any{"name": "Solo", "start_bar": 1, "end_bar": 2})
 	a.ok(a.alice, "POST", "/api/v1/practice", map[string]any{"tab_id": id, "started_at": time.Now().Add(-time.Hour).Format(time.RFC3339), "duration_s": 600})
 	a.ok(a.alice, "POST", "/api/v1/setlists", map[string]any{"name": "Gig", "tab_ids": []int64{id}})
