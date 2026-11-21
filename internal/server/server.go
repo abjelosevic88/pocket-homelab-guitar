@@ -35,6 +35,8 @@ type Server struct {
 
 	ruleMu sync.Mutex // habit ticks are serialized
 
+	chromeVersionMu sync.Mutex
+
 	oidcMu sync.Mutex
 	oidc   *oidcProvider // for the issuer in use; rebuilt when it changes
 
