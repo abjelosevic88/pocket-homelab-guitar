@@ -68,4 +68,14 @@ Everything is per person: another person's ids answer 404.
 
 Pocket Move can copy your tabs and practice out and bring them in: `GET /pocket/portable` describes `GET /export.json`, `GET /export.csv` and `POST /import` under the link scopes `move:export` and `move:import`.
 
+## What Pocket Search, Pocket Day and Pocket Hub ask
+
+Guitar says in its manifest (category `Media`) that it can be searched, has a day and a widget, and answers on the routes every Pocket app uses for that (`docs/capabilities.md` in pocket-homelab-core). Each has its own link scope that opens its one route (and `GET /auth/me`) and nothing else; `guitar:read` and `guitar:write` do not open them. The routes also answer the person's own session or token, and work without Pocket Core. They only read. There is no quick line to keep (`pocket:capture`): a song here is a tab file, and practice needs a length.
+
+| Scope | Call | What |
+| :--- | :--- | :--- |
+| `pocket:search` | `GET /pocket/search?q=&limit=` | `{items: [{id, title, snippet, kind: "tab", date, url: "/tab/{id}", score}]}`. The tabs `GET /tabs?q=` finds: every word in the title, artist, album, tags or file name (song notes are not looked in). `snippet` is artist · album · tuning (unless Standard) · where the song stands ("The Beatles · The White Album · Drop D · learning"), plus the tags or the file name when the words were found there; `date` is when it was last played, else added. A title that has the words comes first, then title and artist together, then the rest. `limit` 1–50, 8 by default. Bangs in Pocket Search: `!tabs`, `!tab`, `!guitar`. |
+| `pocket:day` | `GET /pocket/day/{YYYY-MM-DD}?tz=` | `{date, summary, items: [{id, time, end, title, sub, kind, minutes, done, note, url}]}`. One item per sitting of that day (as `GET /day/{date}`; one of no length is left out): `kind: "practised"`, `title` the song (or what was practised without a tab), `sub` the artist, `minutes`, `time`/`end`, `note` your note on it, `id` `practice:{id}`. A song marked "Can play it" that day is an item too: `kind: "learned"`, `done: true`, `id` `tab:{id}`. `summary`: "Practised 35 minutes: Blackbird, Scales; can now play Yesterday". With `tz` the day and the times are that time zone's, else the server's. A day with nothing has no items and no summary. |
+| `pocket:widget` | `GET /pocket/widget` | `{line, metrics, items: [{id, title, detail, url}], url: "/"}`. `line`: "1 h 20 min this week, 2 days in a row" (empty with no practice in the last seven days); `metrics`: "Today" ("25 of 20 min" with a daily goal), "This week", "Days in a row"; `items`: up to five songs you are learning or polishing, the one played last first (with none marked, the songs played lately), `detail` "The Beatles · played yesterday". No tabs and no practice answers no line, items or metrics. |
+
 `GET /healthz`, `GET /readyz`, `GET /metrics`.

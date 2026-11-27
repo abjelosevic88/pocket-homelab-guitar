@@ -33,6 +33,17 @@ var portable = &core.Portable{
 	},
 }
 
+// capabilities is what Pocket Search, Pocket Day and Pocket Hub may do here
+// (docs/capabilities.md in pocket-homelab-core): one fixed route each, in
+// the shape every Pocket app answers in (capabilities.go). Register adds the
+// pocket:* offers. There is no quick line to keep: a song here is a tab
+// file, and practice needs a length.
+var capabilities = core.Capabilities{
+	Search: &core.Searchable{What: "Your guitar tabs, by song, artist, album and tag", Kinds: []string{"tab"}, Bangs: []string{"tabs", "tab", "guitar"}},
+	Day:    &core.DayFeed{Label: "Guitar", One: "session", Many: "sessions", Unit: "min", What: "The guitar practice you did that day, song by song, and the songs you marked as ones you can play"},
+	Widget: &core.Widget{Title: "Guitar practice", What: "Your practice today and this week, your days in a row and the songs you are learning"},
+}
+
 type linkRoute struct {
 	methods string
 	path    *regexp.Regexp
@@ -52,7 +63,7 @@ var errLinkScope = errors.New("outside the link's scope")
 
 // linkAllows reports whether a link token with these scopes may make this request.
 func linkAllows(scopes []string, r *http.Request) bool {
-	if portable.LinkAllows(scopes, r) {
+	if portable.LinkAllows(scopes, r) || capabilities.LinkAllows(scopes, r) {
 		return true
 	}
 	for _, lr := range linkRoutes {

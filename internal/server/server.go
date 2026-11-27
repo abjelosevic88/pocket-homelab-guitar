@@ -237,15 +237,16 @@ var eventTopics = []string{"guitar.practice_logged", "guitar.tab_added", "guitar
 
 func (s *Server) registerWithCore(ctx context.Context) error {
 	m := core.Manifest{
-		Slug: "guitar", Name: "Pocket Guitar",
+		Slug: "guitar", Name: "Pocket Guitar", Category: "Media",
 		Description: "Your guitar tabs and practice: a tab player for Guitar Pro, MusicXML and alphaTex files with playback, loops, a speed trainer, a live fretboard and the original recording to play along with; a library fed from your Pocket Files folders; a practice log with streaks and statistics; a tuner and a metronome.",
 		Icon:        "/favicon.svg", Version: Version,
 		URL: s.cfg.CoreAppURL, PublicURL: s.cfg.BaseURL, HealthPath: "/healthz", EnvPrefix: "GUITAR",
-		Publishes: eventTopics,
-		Offers:    linkOffers,
-		Portable:  portable,
-		Uses:      append(linkUses(), core.InferenceUse()),
-		Services:  []core.ServiceUse{{Type: "navidrome", Reason: "Play along with the original recording of a song from your own music"}},
+		Publishes:    eventTopics,
+		Offers:       linkOffers,
+		Portable:     portable,
+		Capabilities: capabilities,
+		Uses:         append(linkUses(), core.InferenceUse()),
+		Services:     []core.ServiceUse{{Type: "navidrome", Reason: "Play along with the original recording of a song from your own music"}},
 	}
 	if s.cfg.BaseURL != "" {
 		m.OIDC = &core.OIDCRequest{RedirectURIs: []string{s.oidcCallbackURL()}}

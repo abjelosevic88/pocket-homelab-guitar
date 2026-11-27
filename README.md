@@ -67,6 +67,8 @@ or `docker compose up -d` with [docker-compose.yml](docker-compose.yml). Open it
 
 Set `CORE_URL` and `CORE_REGISTRATION_KEY` and Guitar joins the box: people sign in with Pocket Core, and through app links each person's guitar reaches their own Pocket apps with nothing to paste: their tab folders in Pocket Files (`files:read`, `files:write`), a habit ticked in Pocket Habits when the day's practice is long enough, one practice timer shared with Pocket Time (`time:read`, `time:write`: start it on a song here, stop it here or there), the original recordings from their own Navidrome login, practice plans from Pocket AI. Other Pocket apps can read your practice (`guitar:read`: Pocket Day's journal, Pocket Calendar) or log practice done elsewhere (`guitar:write`). Events on the bus: `guitar.practice_logged`, `guitar.tab_added`, `guitar.song_mastered`. Without Core every connection can be made directly with a URL and a token; the Core-only choices stay visible, greyed out.
 
+**Search, Day and Hub:** Guitar tells Core what the apps that bring everything together can ask it, so they find it on their own. Pocket Search finds your tabs by song, artist, album and tag (`!tabs`, `!tab`, `!guitar`). Pocket Day can read the day's practice: each sitting with its song, artist and minutes, and the songs you marked "Can play it" that day. Pocket Hub shows your practice today and this week, your days in a row and the songs you are learning. Each has its own link (`pocket:search`, `pocket:day`, `pocket:widget`) that opens one route and nothing else, and only reads; in Core → Links they sit under the asking app's "every app" switch. Routes and shapes: [docs/api.md](docs/api.md#what-pocket-search-pocket-day-and-pocket-hub-ask).
+
 ## Develop
 
 ```sh
